@@ -198,8 +198,8 @@ function startProfileApi(client) {
   client.on(Events.GuildUpdate, (_oldGuild, newGuild) => { refreshGuildIfTarget(newGuild); refreshServers(); });
   client.on(Events.GuildCreate, () => refreshServers());
   client.on(Events.GuildDelete, () => refreshServers());
-  client.on(Events.GuildMemberAdd, member => refreshGuildIfTarget(member.guild));
-  client.on(Events.GuildMemberRemove, member => refreshGuildIfTarget(member.guild));
+  client.on(Events.GuildMemberAdd, member => { refreshGuildIfTarget(member.guild); refreshServers(); });
+  client.on(Events.GuildMemberRemove, member => { refreshGuildIfTarget(member.guild); refreshServers(); });
   client.on(Events.ChannelCreate, channel => refreshGuildIfTarget(channel.guild));
   client.on(Events.ChannelDelete, channel => refreshGuildIfTarget(channel.guild));
   client.on(Events.ChannelUpdate, (_oldChannel, newChannel) => refreshGuildIfTarget(newChannel.guild));
