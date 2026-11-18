@@ -38,7 +38,7 @@ function startProfileApi(client) {
   };
 
   async function refreshProfile() {
-    if (!USER_ID || !/^\\d{17,20}$/.test(USER_ID)) return;
+    if (!USER_ID || !/^\d{17,20}$/.test(USER_ID)) return;
     try {
       const user = await client.users.fetch(USER_ID, { force: true });
       const presence = latestPresence || findCachedPresence(client);
@@ -86,7 +86,7 @@ function startProfileApi(client) {
       return;
     }
 
-    if (!USER_ID || !/^\\d{17,20}$/.test(USER_ID)) {
+    if (!USER_ID || !/^\d{17,20}$/.test(USER_ID)) {
       response.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });
       response.end(JSON.stringify({ error: 'DISCORD_USER_ID non configurato' }));
       return;
