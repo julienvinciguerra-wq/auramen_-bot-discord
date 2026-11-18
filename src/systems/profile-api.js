@@ -101,6 +101,14 @@ function startProfileApi(client) {
     if (!USER_ID) console.warn('DISCORD_USER_ID non configurato: API profilo disattivata.');
   });
 
+  // Aggiorna il profilo pubblico quando Discord segnala modifiche a username,
+  // global display name o avatar dell'utente configurato.
+  client.on(Events.UserUpdate, (_oldUser, newUser) => {
+    if (newUser && newUser.id === USER_ID) {
+      refreshProfile();
+    }
+  });
+
   client.on(Events.PresenceUpdate, (_oldPresence, newPresence) => {
     if (newPresence && newPresence.userId === USER_ID) {
       latestPresence = newPresence;
