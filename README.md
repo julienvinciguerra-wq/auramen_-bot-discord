@@ -1,0 +1,98 @@
+# auramen bot
+
+Bot Discord open source per logging, moderazione e ticket.
+
+## Requisiti
+
+- Node.js 20.11 o superiore
+- Un'applicazione bot creata nel [Discord Developer Portal](https://discord.com/developers/applications)
+- Permessi per invitare bot e gestire il server
+
+## Installazione
+
+1. Clona o scarica questo repository.
+2. Apri un terminale nella cartella del progetto.
+3. Installa le dipendenze:
+
+```bash
+npm install
+```
+
+4. Copia `.env.example` in `.env`.
+5. Inserisci `DISCORD_TOKEN`, `CLIENT_ID` e, per lo sviluppo, `GUILD_ID`.
+6. Nel Developer Portal abilita **Server Members Intent** e **Message Content Intent**. Abilita anche gli intent necessari per gli eventi che vuoi registrare.
+7. Invita il bot con gli scope `bot` e `applications.commands`, concedendo solo i permessi necessari.
+8. Registra i comandi:
+
+```bash
+npm run deploy
+```
+
+9. Avvia:
+
+```bash
+npm start
+```
+
+## Comandi disponibili
+
+- `/ping` — verifica che il bot sia online.
+- `/setup logs` — assegna un canale a una categoria di log.
+- `/setup tickets` — configura canale pannello, archivio transcript e ruolo staff.
+- `/setup permessi` — imposta il ruolo e il canale consentiti per ogni comando di moderazione.
+- `/setup mostra` — mostra la configurazione salvata.
+- `/moderazione warn` — registra un avvertimento.
+- `/moderazione timeout` e `untimeout` — gestisce i timeout.
+- `/moderazione kick`, `ban`, `unban` — gestisce espulsioni e ban.
+- `/moderazione purge` — elimina fino a 100 messaggi recenti.
+- `/ticket setup` — (admin) categoria, canale pannello, canale log, archivio transcript, fino a 3 ruoli staff, max ticket per utente.
+- `/ticket config` — (admin) titolo, descrizione, pulsante, footer, colore del pannello e messaggio di benvenuto (`{user}` `{staff}` `{ticket}`); senza opzioni mostra la configurazione.
+- `/ticket pannello` — (admin) pubblica il pannello ticket (se già presente nello stesso canale lo aggiorna invece di duplicarlo).
+- `/ticket trasferisci` — trasferisce l'accesso del ticket a un membro staff o ruolo.
+- `/ticket aggiungi` / `/ticket rimuovi` — dà o toglie l'accesso al ticket a un utente.
+
+## Logging
+
+Il modulo registra eventi disponibili tramite Discord Gateway: entrate/uscite membri, nickname e ruoli membro, messaggi modificati/eliminati quando il contenuto è disponibile, creazione/modifica/eliminazione canali e ruoli, ban/unban, ingressi/uscite/spostamenti vocali e alcune modifiche principali al server.
+
+Discord non rende disponibili tutti gli eventi né garantisce sempre l'identificazione dell'autore. Gli Audit Logs richiedono il permesso View Audit Log e possono avere ritardi. I messaggi eliminati prima che il bot li abbia ricevuti o non presenti in cache potrebbero non avere contenuto recuperabile.
+
+## Ticket e transcript
+
+**Configurazione rapida** (dal server, come amministratore):
+
+1. `/ticket setup` con `categoria`, `pannello`, `log`, `staff` (e opzionalmente `transcript`, `staff2`, `staff3`).
+2. `/ticket config` per titolo/descrizione/benvenuto (facoltativo).
+3. `/ticket pannello` per pubblicare il pannello. Il link del canale del pannello va poi inserito nel sito (`DISCORD_TICKET_URL`).
+
+`/setup tickets` continua a funzionare. In alternativa alle slash command puoi usare le variabili d'ambiente `TICKET_*` di `.env.example` (valori di riserva: il database ha la precedenza). Nessun ID è precompilato.
+
+**Flusso**: il pulsante *Apri Ticket* crea un canale privato (visibile solo a chi apre, ruoli staff e bot), manda il benvenuto con ping allo staff e registra l'evento in database e nel canale log. Nel ticket: *Claim*, *Chiudi ticket*. Alla chiusura viene inviato il transcript HTML all'archivio, il canale resta (sola lettura per l'utente) con i pulsanti *Riapri ticket* e *Elimina ticket* (solo staff, con conferma). Se il transcript non può essere inviato il ticket resta aperto, per non perdere la conversazione.
+
+**Protezioni**: permessi verificati a ogni azione, blocco anti-doppio-click e limite di ticket per utente, record orfani (canale cancellato a mano) ripuliti, errori API gestiti con messaggio all'utente, nessun token nei log. Le operazioni sono nella tabella `ticket_logs`.
+
+I collegamenti agli allegati puntano ai file ospitati da Discord e potrebbero non essere permanenti. I transcript contengono dati potenzialmente privati: limita l'accesso al canale archivio e definisci una politica di conservazione.
+
+## Test
+
+```bash
+npm test      # flusso ticket con oggetti Discord simulati (nessuna connessione)
+npm run check # controllo sintattico di tutti i file
+```
+
+## Controlli di sicurezza
+
+- Non condividere mai il token del bot.
+- Non caricare `.env` su GitHub.
+- Concedi al bot solo i permessi strettamente necessari.
+- Il ruolo del bot deve essere posizionato sopra i ruoli che deve gestire.
+- Verifica i permessi e i canali in un server di test prima dell'uso in produzione.
+- SQLite viene salvato localmente nella cartella `data/`.
+
+## Stato del progetto
+
+Questa è una prima versione di sviluppo. Prima di usarla in un server reale servono test end-to-end, ulteriori categorie di log, miglioramenti del flusso ticket e verifiche dei permessi.
+
+## Licenza
+
+MIT. Vedi [LICENSE](LICENSE).

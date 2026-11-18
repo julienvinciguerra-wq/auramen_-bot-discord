@@ -1,0 +1,21 @@
+{
+  "name": "auramen-bot",
+  "version": "0.2.0",
+  "description": "Open-source Discord moderation, logging and ticket bot.",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/index.js",
+    "deploy": "node src/deploy-commands.js",
+    "check": "node --check src/index.js && node --check src/deploy-commands.js && node --check src/commands/setup.js && node --check src/commands/ticket.js && node --check src/commands/moderazione.js && node --check src/systems/tickets.js && node --check src/events/register-logs.js && node --check src/systems/logger.js && node --check src/database/database.js && node --check tests/ticket-flow.test.js",
+    "test": "node --test tests/ticket-flow.test.js"
+  },
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "discord.js": "^14.19.3",
+    "dotenv": "^16.4.7"
+  }
+}
