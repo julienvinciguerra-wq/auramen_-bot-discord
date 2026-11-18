@@ -17,6 +17,7 @@ if (!process.env.DISCORD_TOKEN) {
 
 const { registerLogs } = require('./events/register-logs');
 const { handleButton } = require('./systems/tickets');
+const { startProfileApi } = require('./systems/profile-api');
 
 const client = new Client({
   intents: [
@@ -25,12 +26,14 @@ const client = new Client({
     GatewayIntentBits.GuildModeration,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildVoiceStates
+    GatewayIntentBits.GuildVoiceStates,
+    GatewayIntentBits.GuildPresences
   ],
   partials: [Partials.Message, Partials.Channel, Partials.User]
 });
 
 registerLogs(client);
+startProfileApi(client);
 
 client.commands = new Collection();
 const commandsPath = path.join(__dirname, 'commands');
