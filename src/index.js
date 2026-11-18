@@ -17,6 +17,7 @@ if (!process.env.DISCORD_TOKEN) {
 
 const { registerLogs } = require('./events/register-logs');
 const { handleButton } = require('./systems/tickets');
+const { handleTicketMessage } = require('./systems/ticket-assistant');
 const { startProfileApi } = require('./systems/profile-api');
 
 const client = new Client({
@@ -34,6 +35,12 @@ const client = new Client({
 
 registerLogs(client);
 startProfileApi(client);
+
+// Assistente impostazioni: risponde solo nei ticket aperti registrati nel database.
+client.on(Events.MessageCreate, async message => {
+  try { await handleTicketMessage(message); }
+  catch (error) { console.error('[Ticket assistant] Errore:', error); }
+});
 
 client.commands = new Collection();
 const commandsPath = path.join(__dirname, 'commands');
