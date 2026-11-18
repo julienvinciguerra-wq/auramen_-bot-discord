@@ -74,7 +74,7 @@ function startProfileApi(client) {
   }
 
   async function refreshProfile() {
-    if (!USER_ID || !/^\\d{17,20}$/.test(USER_ID)) return;
+    if (!USER_ID || !/^\d{17,20}$/.test(USER_ID)) return;
     try {
       const user = await client.users.fetch(USER_ID, { force: true });
       const presence = latestPresence || findCachedPresence(client);
@@ -93,7 +93,7 @@ function startProfileApi(client) {
   }
 
   function resolveGuildId() {
-    if (GUILD_ID && /^\\d{17,20}$/.test(GUILD_ID)) return GUILD_ID;
+    if (GUILD_ID && /^\d{17,20}$/.test(GUILD_ID)) return GUILD_ID;
     if (client.guilds.cache.size === 1) return client.guilds.cache.first().id;
     return null;
   }
@@ -154,7 +154,7 @@ function startProfileApi(client) {
       return;
     }
 
-    if (pathname === '/api/discord-profile' && (!USER_ID || !/^\\d{17,20}$/.test(USER_ID))) {
+    if (pathname === '/api/discord-profile' && (!USER_ID || !/^\d{17,20}$/.test(USER_ID))) {
       response.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });
       response.end(JSON.stringify({ error: 'DISCORD_USER_ID non configurato' }));
       return;
@@ -195,7 +195,9 @@ function startProfileApi(client) {
     const targetId = resolveGuildId();
     if (guild && targetId && guild.id === targetId) refreshServer();
   };
-  client.on(Events.GuildUpdate, (_oldGuild, newGuild) => { refreshGuildIfTarget(newGuild); refreshServers(); });\n  client.on(Events.GuildCreate, () => refreshServers());\n  client.on(Events.GuildDelete, () => refreshServers());
+  client.on(Events.GuildUpdate, (_oldGuild, newGuild) => { refreshGuildIfTarget(newGuild); refreshServers(); });
+  client.on(Events.GuildCreate, () => refreshServers());
+  client.on(Events.GuildDelete, () => refreshServers());
   client.on(Events.GuildMemberAdd, member => refreshGuildIfTarget(member.guild));
   client.on(Events.GuildMemberRemove, member => refreshGuildIfTarget(member.guild));
   client.on(Events.ChannelCreate, channel => refreshGuildIfTarget(channel.guild));
@@ -204,9 +206,11 @@ function startProfileApi(client) {
 
   client.once(Events.ClientReady, () => {
     refreshProfile();
-    refreshServer();\n    refreshServers();\n    const timer = setInterval(() => {
+    refreshServer();
+    refreshServers();\n    const timer = setInterval(() => {
       refreshProfile();
-      refreshServer();\n      refreshServers();\n    }, 60000);
+      refreshServer();
+      refreshServers();\n    }, 60000);
     if (typeof timer.unref === 'function') timer.unref();
   });
 
