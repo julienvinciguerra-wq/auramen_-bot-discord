@@ -207,10 +207,12 @@ function startProfileApi(client) {
   client.once(Events.ClientReady, () => {
     refreshProfile();
     refreshServer();
-    refreshServers();\n    const timer = setInterval(() => {
+    refreshServers();
+    const timer = setInterval(() => {
       refreshProfile();
       refreshServer();
-      refreshServers();\n    }, 60000);
+      refreshServers();
+    }, 60000);
     if (typeof timer.unref === 'function') timer.unref();
   });
 
