@@ -160,7 +160,13 @@ function startProfileApi(client) {
       return;
     }
 
-    if (pathname === '/api/discord-servers' && !serversSnapshot.available) {\n      response.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });\n      response.end(JSON.stringify({ error: 'Contatori server Discord non ancora disponibili' }));\n      return;\n    }\n\n    if (pathname === '/api/discord-server' && !serverSnapshot.available) {
+    if (pathname === '/api/discord-servers' && !serversSnapshot.available) {
+      response.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });
+      response.end(JSON.stringify({ error: 'Contatori server Discord non ancora disponibili' }));
+      return;
+    }
+
+    if (pathname === '/api/discord-server' && !serverSnapshot.available) {
       response.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });
       response.end(JSON.stringify({ error: 'Server Discord non ancora disponibile' }));
       return;
