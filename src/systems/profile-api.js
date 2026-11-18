@@ -1,7 +1,8 @@
 const http = require('node:http');
-const { Events, ActivityType } = require('discord.js');
+const { Events, ActivityType, PermissionFlagsBits, ChannelType } = require('discord.js');
 
 const USER_ID = process.env.DISCORD_USER_ID || '';
+const GUILD_ID = process.env.DISCORD_GUILD_ID || '';
 const PORT = Number(process.env.PORT || process.env.PROFILE_API_PORT || 3001);
 const allowedOrigins = (process.env.SITE_ORIGIN || '')
   .split(',')
@@ -25,9 +26,22 @@ function makeCustomStatus(presence) {
   return [emoji, state].filter(Boolean).join(' ').trim();
 }
 
+function channelTypeName(type) {
+  switch (type) {
+    case ChannelType.GuildCategory: return 'category';
+    case ChannelType.GuildText: return 'text';
+    case ChannelType.GuildAnnouncement: return 'announcement';
+    case ChannelType.GuildVoice: return 'voice';
+    case ChannelType.GuildStageVoice: return 'stage';
+    case ChannelType.GuildForum: return 'forum';
+    case ChannelType.GuildMedia: return 'media';
+    default: return null;
+  }
+}
+
 function startProfileApi(client) {
   let latestPresence = null;
-  let snapshot = {
+  let profileSnapshot = {
     userId: USER_ID,
     displayName: 'auramen_',
     username: 'auramen_',
@@ -36,13 +50,24 @@ function startProfileApi(client) {
     customStatus: '',
     updatedAt: new Date().toISOString()
   };
+  let serverSnapshot = {
+    available: false,
+    guildId: GUILD_ID || null,
+    name: '',
+    iconUrl: null,
+    bannerUrl: null,
+    description: '',
+    memberCount: null,
+    channels: [],
+    updatedAt: new Date().toISOString()
+  };
 
   async function refreshProfile() {
-    if (!USER_ID || !/^\d{17,20}$/.test(USER_ID)) return;
+    if (!USER_ID || !/^\\d{17,20}$/.test(USER_ID)) return;
     try {
       const user = await client.users.fetch(USER_ID, { force: true });
       const presence = latestPresence || findCachedPresence(client);
-      snapshot = {
+      profileSnapshot = {
         userId: USER_ID,
         displayName: user.globalName || user.username,
         username: user.username,
@@ -53,6 +78,67 @@ function startProfileApi(client) {
       };
     } catch (error) {
       console.error('Aggiornamento profilo Discord non riuscito:', error.message);
+    }
+  }
+
+  function resolveGuildId() {
+    if (GUILD_ID && /^\\d{17,20}$/.test(GUILD_ID)) return GUILD_ID;
+    if (client.guilds.cache.size === 1) return client.guilds.cache.first().id;
+    return null;
+  }
+
+  async function refreshServer() {
+    const guildId = resolveGuildId();
+    if (!guildId) {
+      console.warn('Server Discord non selezionato: configura DISCORD_GUILD_ID su Render.');
+      return;
+    }
+
+    try {
+      const guild = await client.guilds.fetch(guildId);
+      const channels = await guild.channels.fetch();
+      const publicChannels = [];
+
+      for (const channel of channels.values()) {
+        if (!channel || !channelTypeName(channel.type)) continue;
+        const permissions = channel.permissionsFor(guild.roles.everyone);
+        if (!permissions || !permissions.has(PermissionFlagsBits.ViewChannel)) continue;
+
+        publicChannels.push({
+          id: channel.id,
+          name: channel.name,
+          type: channelTypeName(channel.type),
+          parentId: channel.parentId || null,
+          position: channel.rawPosition ?? channel.position ?? 0,
+          url: 'https://discord.com/channels/' + guild.id + '/' + channel.id
+        });
+      }
+
+      publicChannels.sort((a, b) => {
+        if (a.parentId === b.parentId) return a.position - b.position || a.name.localeCompare(b.name);
+        if (!a.parentId) return -1;
+        if (!b.parentId) return 1;
+        return a.parentId.localeCompare(b.parentId);
+      });
+
+      serverSnapshot = {
+        available: true,
+        guildId: guild.id,
+        name: guild.name,
+        iconUrl: guild.iconURL({ extension: 'png', size: 512 }),
+        bannerUrl: guild.bannerURL({ extension: 'png', size: 1024 }),
+        description: guild.description || '',
+        memberCount: guild.memberCount ?? null,
+        channels: publicChannels,
+        updatedAt: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Aggiornamento server Discord non riuscito:', error.message);
+      serverSnapshot = {
+        ...serverSnapshot,
+        available: false,
+        updatedAt: new Date().toISOString()
+      };
     }
   }
 
@@ -80,35 +166,36 @@ function startProfileApi(client) {
     }
 
     const pathname = new URL(request.url, 'http://localhost').pathname;
-    if (request.method !== 'GET' || pathname !== '/api/discord-profile') {
+    if (request.method !== 'GET' || !['/api/discord-profile', '/api/discord-server'].includes(pathname)) {
       response.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
       response.end(JSON.stringify({ error: 'Not found' }));
       return;
     }
 
-    if (!USER_ID || !/^\d{17,20}$/.test(USER_ID)) {
+    if (pathname === '/api/discord-profile' && (!USER_ID || !/^\\d{17,20}$/.test(USER_ID))) {
       response.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });
       response.end(JSON.stringify({ error: 'DISCORD_USER_ID non configurato' }));
       return;
     }
 
+    if (pathname === '/api/discord-server' && !serverSnapshot.available) {
+      response.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });
+      response.end(JSON.stringify({ error: 'Server Discord non ancora disponibile' }));
+      return;
+    }
+
     response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    response.end(JSON.stringify(snapshot));
+    response.end(JSON.stringify(pathname === '/api/discord-profile' ? profileSnapshot : serverSnapshot));
   });
 
   server.listen(PORT, '0.0.0.0', () => {
-    console.log('API profilo Discord in ascolto sulla porta ' + PORT);
+    console.log('API Discord in ascolto sulla porta ' + PORT);
     if (!USER_ID) console.warn('DISCORD_USER_ID non configurato: API profilo disattivata.');
   });
 
-  // Aggiorna il profilo pubblico quando Discord segnala modifiche a username,
-  // global display name o avatar dell'utente configurato.
   client.on(Events.UserUpdate, (_oldUser, newUser) => {
-    if (newUser && newUser.id === USER_ID) {
-      refreshProfile();
-    }
+    if (newUser && newUser.id === USER_ID) refreshProfile();
   });
-
   client.on(Events.PresenceUpdate, (_oldPresence, newPresence) => {
     if (newPresence && newPresence.userId === USER_ID) {
       latestPresence = newPresence;
@@ -116,9 +203,24 @@ function startProfileApi(client) {
     }
   });
 
+  const refreshGuildIfTarget = guild => {
+    const targetId = resolveGuildId();
+    if (guild && targetId && guild.id === targetId) refreshServer();
+  };
+  client.on(Events.GuildUpdate, (_oldGuild, newGuild) => refreshGuildIfTarget(newGuild));
+  client.on(Events.GuildMemberAdd, member => refreshGuildIfTarget(member.guild));
+  client.on(Events.GuildMemberRemove, member => refreshGuildIfTarget(member.guild));
+  client.on(Events.ChannelCreate, channel => refreshGuildIfTarget(channel.guild));
+  client.on(Events.ChannelDelete, channel => refreshGuildIfTarget(channel.guild));
+  client.on(Events.ChannelUpdate, (_oldChannel, newChannel) => refreshGuildIfTarget(newChannel.guild));
+
   client.once(Events.ClientReady, () => {
     refreshProfile();
-    const timer = setInterval(refreshProfile, 60000);
+    refreshServer();
+    const timer = setInterval(() => {
+      refreshProfile();
+      refreshServer();
+    }, 60000);
     if (typeof timer.unref === 'function') timer.unref();
   });
 
