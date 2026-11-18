@@ -2,7 +2,7 @@ const http = require('node:http');
 const { Events, ActivityType, PermissionFlagsBits, ChannelType } = require('discord.js');
 
 const USER_ID = process.env.DISCORD_USER_ID || '';
-const GUILD_ID = process.env.DISCORD_GUILD_ID || '';
+const GUILD_ID = process.env.DISCORD_GUILD_ID || '1550243283438018660';
 const PORT = Number(process.env.PORT || process.env.PROFILE_API_PORT || 3001);
 const allowedOrigins = (process.env.SITE_ORIGIN || '')
   .split(',')
