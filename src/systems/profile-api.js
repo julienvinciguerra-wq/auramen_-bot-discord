@@ -1,5 +1,5 @@
 const http = require('node:http');
-const { Events, ActivityType, PermissionFlagsBits, ChannelType } = require('discord.js');
+const { Events, ActivityType } = require('discord.js');
 
 const USER_ID = process.env.DISCORD_USER_ID || '';
 const GUILD_ID = process.env.DISCORD_GUILD_ID || '1550243283438018660';
@@ -26,18 +26,6 @@ function makeCustomStatus(presence) {
   return [emoji, state].filter(Boolean).join(' ').trim();
 }
 
-function channelTypeName(type) {
-  switch (type) {
-    case ChannelType.GuildCategory: return 'category';
-    case ChannelType.GuildText: return 'text';
-    case ChannelType.GuildAnnouncement: return 'announcement';
-    case ChannelType.GuildVoice: return 'voice';
-    case ChannelType.GuildStageVoice: return 'stage';
-    case ChannelType.GuildForum: return 'forum';
-    case ChannelType.GuildMedia: return 'media';
-    default: return null;
-  }
-}
 
 function startProfileApi(client) {
   let latestPresence = null;
@@ -58,9 +46,32 @@ function startProfileApi(client) {
     bannerUrl: null,
     description: '',
     memberCount: null,
-    channels: [],
     updatedAt: new Date().toISOString()
   };
+
+  let serversSnapshot = {
+    available: true,
+    servers: [],
+    updatedAt: new Date().toISOString()
+  };
+
+  async function refreshServers() {
+    try {
+      const servers = client.guilds.cache.map(guild => ({
+        id: guild.id,
+        name: guild.name,
+        memberCount: guild.memberCount ?? null
+      })).sort((a, b) => a.name.localeCompare(b.name, 'it'));
+      serversSnapshot = {
+        available: true,
+        servers,
+        updatedAt: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Aggiornamento contatori server Discord non riuscito:', error.message);
+      serversSnapshot = { ...serversSnapshot, available: false, updatedAt: new Date().toISOString() };
+    }
+  }
 
   async function refreshProfile() {
     if (!USER_ID || !/^\\d{17,20}$/.test(USER_ID)) return;
@@ -96,31 +107,6 @@ function startProfileApi(client) {
 
     try {
       const guild = await client.guilds.fetch(guildId);
-      const channels = await guild.channels.fetch();
-      const publicChannels = [];
-
-      for (const channel of channels.values()) {
-        if (!channel || !channelTypeName(channel.type)) continue;
-        const permissions = channel.permissionsFor(guild.roles.everyone);
-        if (!permissions || !permissions.has(PermissionFlagsBits.ViewChannel)) continue;
-
-        publicChannels.push({
-          id: channel.id,
-          name: channel.name,
-          type: channelTypeName(channel.type),
-          parentId: channel.parentId || null,
-          position: channel.rawPosition ?? channel.position ?? 0,
-          url: 'https://discord.com/channels/' + guild.id + '/' + channel.id
-        });
-      }
-
-      publicChannels.sort((a, b) => {
-        if (a.parentId === b.parentId) return a.position - b.position || a.name.localeCompare(b.name);
-        if (!a.parentId) return -1;
-        if (!b.parentId) return 1;
-        return a.parentId.localeCompare(b.parentId);
-      });
-
       serverSnapshot = {
         available: true,
         guildId: guild.id,
@@ -129,16 +115,12 @@ function startProfileApi(client) {
         bannerUrl: guild.bannerURL({ extension: 'png', size: 1024 }),
         description: guild.description || '',
         memberCount: guild.memberCount ?? null,
-        channels: publicChannels,
         updatedAt: new Date().toISOString()
       };
+      await refreshServers();
     } catch (error) {
       console.error('Aggiornamento server Discord non riuscito:', error.message);
-      serverSnapshot = {
-        ...serverSnapshot,
-        available: false,
-        updatedAt: new Date().toISOString()
-      };
+      serverSnapshot = { ...serverSnapshot, available: false, updatedAt: new Date().toISOString() };
     }
   }
 
@@ -166,7 +148,7 @@ function startProfileApi(client) {
     }
 
     const pathname = new URL(request.url, 'http://localhost').pathname;
-    if (request.method !== 'GET' || !['/api/discord-profile', '/api/discord-server'].includes(pathname)) {
+    if (request.method !== 'GET' || !['/api/discord-profile', '/api/discord-server', '/api/discord-servers'].includes(pathname)) {
       response.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
       response.end(JSON.stringify({ error: 'Not found' }));
       return;
@@ -178,14 +160,14 @@ function startProfileApi(client) {
       return;
     }
 
-    if (pathname === '/api/discord-server' && !serverSnapshot.available) {
+    if (pathname === '/api/discord-servers' && !serversSnapshot.available) {\n      response.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });\n      response.end(JSON.stringify({ error: 'Contatori server Discord non ancora disponibili' }));\n      return;\n    }\n\n    if (pathname === '/api/discord-server' && !serverSnapshot.available) {
       response.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });
       response.end(JSON.stringify({ error: 'Server Discord non ancora disponibile' }));
       return;
     }
 
     response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    response.end(JSON.stringify(pathname === '/api/discord-profile' ? profileSnapshot : serverSnapshot));
+    response.end(JSON.stringify(pathname === '/api/discord-profile' ? profileSnapshot : pathname === '/api/discord-servers' ? serversSnapshot : serverSnapshot));
   });
 
   server.listen(PORT, '0.0.0.0', () => {
@@ -207,7 +189,7 @@ function startProfileApi(client) {
     const targetId = resolveGuildId();
     if (guild && targetId && guild.id === targetId) refreshServer();
   };
-  client.on(Events.GuildUpdate, (_oldGuild, newGuild) => refreshGuildIfTarget(newGuild));
+  client.on(Events.GuildUpdate, (_oldGuild, newGuild) => { refreshGuildIfTarget(newGuild); refreshServers(); });\n  client.on(Events.GuildCreate, () => refreshServers());\n  client.on(Events.GuildDelete, () => refreshServers());
   client.on(Events.GuildMemberAdd, member => refreshGuildIfTarget(member.guild));
   client.on(Events.GuildMemberRemove, member => refreshGuildIfTarget(member.guild));
   client.on(Events.ChannelCreate, channel => refreshGuildIfTarget(channel.guild));
@@ -216,11 +198,9 @@ function startProfileApi(client) {
 
   client.once(Events.ClientReady, () => {
     refreshProfile();
-    refreshServer();
-    const timer = setInterval(() => {
+    refreshServer();\n    refreshServers();\n    const timer = setInterval(() => {
       refreshProfile();
-      refreshServer();
-    }, 60000);
+      refreshServer();\n      refreshServers();\n    }, 60000);
     if (typeof timer.unref === 'function') timer.unref();
   });
 
