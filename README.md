@@ -19,7 +19,7 @@ npm install
 ```
 
 4. Copia `.env.example` in `.env`.
-5. Inserisci `DISCORD_TOKEN`, `CLIENT_ID` e, per lo sviluppo, `GUILD_ID`.
+5. Inserisci `DISCORD_TOKEN` e, consigliato, `GUILD_ID` (il server dove vuoi vedere i comandi subito). `CLIENT_ID` è facoltativo: se manca viene ricavato dal token.
 6. Nel Developer Portal abilita **Server Members Intent** e **Message Content Intent**. Abilita anche gli intent necessari per gli eventi che vuoi registrare.
 7. Invita il bot con gli scope `bot` e `applications.commands`, concedendo solo i permessi necessari.
 8. Registra i comandi:
