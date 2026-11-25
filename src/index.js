@@ -19,6 +19,7 @@ const { registerLogs } = require('./events/register-logs');
 const { handleButton } = require('./systems/tickets');
 const { handleTicketMessage } = require('./systems/ticket-assistant');
 const { startProfileApi } = require('./systems/profile-api');
+const { startCounters } = require('./systems/counters');
 
 const client = new Client({
   intents: [
@@ -35,6 +36,7 @@ const client = new Client({
 
 registerLogs(client);
 startProfileApi(client);
+startCounters(client);
 
 // Assistente impostazioni: risponde solo nei ticket aperti registrati nel database.
 client.on(Events.MessageCreate, async message => {

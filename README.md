@@ -41,10 +41,17 @@ npm start
 - `/setup tickets` — configura canale pannello, archivio transcript e ruolo staff.
 - `/setup permessi` — imposta il ruolo e il canale consentiti per ogni comando di moderazione.
 - `/setup mostra` — mostra la configurazione salvata.
-- `/moderazione warn` — registra un avvertimento.
+- `/moderazione warn` — registra un avvertimento (l'utente riceve un DM, se ha i DM aperti).
+- `/moderazione storico` — mostra gli ultimi provvedimenti di un utente con il totale dei warn.
+- `/moderazione annulla` — (admin) elimina un caso registrato per errore; non annulla l'azione già eseguita su Discord.
 - `/moderazione timeout` e `untimeout` — gestisce i timeout.
 - `/moderazione kick`, `ban`, `unban` — gestisce espulsioni e ban.
 - `/moderazione purge` — elimina fino a 100 messaggi recenti.
+- `/counter setup` — assegna un canale a un counter (membri, online, bot).
+- `/counter aggiorna`, `mostra`, `rimuovi` — forza l'aggiornamento, mostra la configurazione o smette di aggiornare un counter.
+- `/regole pubblica` — pubblica o aggiorna il regolamento in un canale.
+- `/regole config` — personalizza titolo, testo, footer e colore del regolamento.
+- `/regole mostra` — anteprima del regolamento.
 - `/ticket setup` — (admin) categoria, canale pannello, canale log, archivio transcript, fino a 3 ruoli staff, max ticket per utente.
 - `/ticket config` — (admin) titolo, descrizione, pulsante, footer, colore del pannello e messaggio di benvenuto (`{user}` `{staff}` `{ticket}`); senza opzioni mostra la configurazione.
 - `/ticket pannello` — (admin) pubblica il pannello ticket (se già presente nello stesso canale lo aggiorna invece di duplicarlo).
@@ -73,10 +80,23 @@ Discord non rende disponibili tutti gli eventi né garantisce sempre l'identific
 
 I collegamenti agli allegati puntano ai file ospitati da Discord e potrebbero non essere permanenti. I transcript contengono dati potenzialmente privati: limita l'accesso al canale archivio e definisci una politica di conservazione.
 
+## Counter
+
+I counter sono canali (meglio **vocali**) rinominati dal bot con il conteggio: membri, utenti online o bot. `{count}` nel formato viene sostituito dal numero.
+
+1. `/counter setup tipo:Membri canale:<canale vocale> formato:Membri: {count}`
+2. Ripeti il setup per gli altri tipi, se ti servono.
+
+Discord consente **2 rinomine ogni 10 minuti per canale**: il bot non supera mai il limite e aggiorna solo quando il valore cambia davvero. All'avvio e ogni 10 minuti ripete il controllo; il valore non viene inventato se le presenze non sono ancora disponibili.
+
+## Regolamento
+
+`/regole config testo:Regola uno\nRegola due` salva le regole (vengono numerate automaticamente), poi `/regole pubblica canale:<canale>` le pubblica. Se il regolamento è già in quel canale viene aggiornato invece di essere duplicato.
+
 ## Test
 
 ```bash
-npm test      # flusso ticket con oggetti Discord simulati (nessuna connessione)
+npm test      # flusso ticket, counter e regolamento con oggetti Discord simulati
 npm run check # controllo sintattico di tutti i file
 ```
 

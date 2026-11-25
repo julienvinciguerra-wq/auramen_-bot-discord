@@ -7,8 +7,8 @@
   "scripts": {
     "start": "node src/index.js",
     "deploy": "node src/deploy-commands.js",
-    "check": "node --check src/index.js && node --check src/systems/profile-api.js && node --check src/deploy-commands.js && node --check src/commands/setup.js && node --check src/commands/ticket.js && node --check src/commands/moderazione.js && node --check src/systems/tickets.js && node --check src/events/register-logs.js && node --check src/systems/logger.js && node --check src/database/database.js && node --check tests/ticket-flow.test.js && node --check src/systems/ticket-assistant.js",
-    "test": "node --test tests/ticket-flow.test.js"
+    "check": "node --check src/index.js && node --check src/systems/profile-api.js && node --check src/deploy-commands.js && node --check src/commands/setup.js && node --check src/commands/ticket.js && node --check src/commands/moderazione.js && node --check src/commands/counter.js && node --check src/commands/regole.js && node --check src/systems/tickets.js && node --check src/systems/counters.js && node --check src/systems/moderation.js && node --check src/events/register-logs.js && node --check src/systems/logger.js && node --check src/database/database.js && node --check tests/ticket-flow.test.js && node --check tests/counters-rules.test.js && node --check src/systems/ticket-assistant.js",
+    "test": "node --test tests/ticket-flow.test.js tests/counters-rules.test.js"
   },
   "engines": {
     "node": "22.x"

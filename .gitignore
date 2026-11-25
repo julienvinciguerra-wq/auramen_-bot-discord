@@ -6,3 +6,5 @@ node_modules/
 *.sqlite3
 *.db
 logs/
+# Copie di riferimento di altri progetti (solo consultazione, non fanno parte del bot)
+reference/
