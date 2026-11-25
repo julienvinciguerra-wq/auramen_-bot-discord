@@ -57,10 +57,17 @@ npm start
 - `/ticket pannello` — (admin) pubblica il pannello ticket (se già presente nello stesso canale lo aggiorna invece di duplicarlo).
 - `/ticket trasferisci` — trasferisce l'accesso del ticket a un membro staff o ruolo.
 - `/ticket aggiungi` / `/ticket rimuovi` — dà o toglie l'accesso al ticket a un utente.
+- `/ticket transcript` — genera a richiesta il transcript HTML del ticket corrente (funziona anche su un ticket già chiuso).
 
 ## Logging
 
 Il modulo registra eventi disponibili tramite Discord Gateway: entrate/uscite membri, nickname e ruoli membro, messaggi modificati/eliminati quando il contenuto è disponibile, creazione/modifica/eliminazione canali e ruoli, ban/unban, ingressi/uscite/spostamenti vocali e alcune modifiche principali al server.
+
+Categorie assegnabili con `/setup logs categoria:…`: `members`, `messages`, `channels`, `roles`, `moderation`, `ticket`, `voice`, `server`.
+
+**Sanzioni**: ogni comando `/moderazione` completato invia nel canale `moderation` un embed “Sanzione: …” con utente, staff, motivo, numero di caso e dettagli (durata del timeout, giorni di messaggi eliminati col ban). Lo stesso dato resta nella tabella `moderation_cases` ed è consultabile con `/moderazione storico`.
+
+**Ticket**: apertura, claim, trasferimento, aggiunta/rimozione membri, generazione manuale del transcript, chiusura, riapertura ed eliminazione inviano un embed nel canale `ticket` (impostabile con `/setup logs categoria:ticket` oppure `/ticket setup log`). Se nessuno dei due è configurato si usa il canale archivio transcript. Il log di chiusura riporta anche la durata del ticket; ogni evento è registrato in `ticket_logs`.
 
 Discord non rende disponibili tutti gli eventi né garantisce sempre l'identificazione dell'autore. Gli Audit Logs richiedono il permesso View Audit Log e possono avere ritardi. I messaggi eliminati prima che il bot li abbia ricevuti o non presenti in cache potrebbero non avere contenuto recuperabile.
 
@@ -75,6 +82,8 @@ Discord non rende disponibili tutti gli eventi né garantisce sempre l'identific
 `/setup tickets` continua a funzionare. In alternativa alle slash command puoi usare le variabili d'ambiente `TICKET_*` di `.env.example` (valori di riserva: il database ha la precedenza). Nessun ID è precompilato.
 
 **Flusso**: il pulsante *Apri Ticket* crea un canale privato (visibile solo a chi apre, ruoli staff e bot), manda il benvenuto con ping allo staff e registra l'evento in database e nel canale log. Nel ticket: *Claim*, *Chiudi ticket*. Alla chiusura viene inviato il transcript HTML all'archivio, il canale resta (sola lettura per l'utente) con i pulsanti *Riapri ticket* e *Elimina ticket* (solo staff, con conferma). Se il transcript non può essere inviato il ticket resta aperto, per non perdere la conversazione.
+
+**Transcript**: il file HTML è un documento autonomo (stile Discord, con avatar, date in ora italiana, allegati cliccabili e badge BOT) generato da `src/systems/transcripts.js`. Viene allegato all'archivio alla chiusura e si può rigenerare in qualsiasi momento con `/ticket transcript`, anche su un ticket già chiuso; il download è visibile solo a chi esegue il comando.
 
 **Protezioni**: permessi verificati a ogni azione, blocco anti-doppio-click e limite di ticket per utente, record orfani (canale cancellato a mano) ripuliti, errori API gestiti con messaggio all'utente, nessun token nei log. Le operazioni sono nella tabella `ticket_logs`.
 

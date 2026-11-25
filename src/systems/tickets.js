@@ -3,6 +3,7 @@ const {
   ChannelType, PermissionFlagsBits, AttachmentBuilder
 } = require('discord.js');
 const { db, getGuildConfig, setGuildConfig } = require('../database/database');
+const { buildTicketTranscript } = require('./transcripts');
 
 const BRAND_COLOR = 0xA855F7; // viola AURAMEN
 const SUCCESS_COLOR = 0x57F287;
@@ -119,13 +120,15 @@ function recordEvent(ticketId, guildId, action, actorId, targetId, details) {
 /** Registra l'evento nel database e lo invia al canale log (se configurato). */
 async function logTicket(guild, settings, { ticket, action, title, actorId, targetId, details, color = BRAND_COLOR }) {
   recordEvent(ticket?.id, guild.id, action, actorId, targetId, details);
-  const channelId = settings.logChannelId || settings.transcriptChannelId;
+  // Canale dedicato dei log ticket: /setup logs categoria:ticket, poi /ticket setup log, poi archivio.
+  const channelId = getGuildConfig(guild.id).logging?.ticket || settings.logChannelId || settings.transcriptChannelId;
   if (!channelId) return;
   const channel = await guild.channels.fetch(channelId).catch(() => null);
   if (!channel?.isTextBased()) return;
 
   const fields = [];
   if (ticket) fields.push({ name: 'Ticket', value: `#${ticket.id}${ticket.channel_id ? ` • <#${ticket.channel_id}>` : ''}`, inline: true });
+  if (ticket?.opener_id) fields.push({ name: 'Aperto da', value: `<@${ticket.opener_id}>`, inline: true });
   if (actorId) fields.push({ name: 'Eseguito da', value: `<@${actorId}>`, inline: true });
   if (targetId) fields.push({ name: 'Utente', value: `<@${targetId}>`, inline: true });
   if (details) fields.push({ name: 'Dettagli', value: String(details).slice(0, 1000) });
@@ -327,42 +330,12 @@ async function openTicket(interaction) {
 }
 
 // ---------------------------------------------------------------------------
-// Transcript (invariato)
+// Transcript
 // ---------------------------------------------------------------------------
 
-function escapeHtml(value = '') {
-  return String(value).replace(/[&<>"']/g, char => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-  })[char]);
-}
-
-async function buildTranscript(channel, ticket) {
-  const messages = [];
-  let before;
-  for (let page = 0; page < 10; page++) {
-    const batch = await channel.messages.fetch({ limit: 100, ...(before ? { before } : {}) }).catch(() => null);
-    if (!batch?.size) break;
-    messages.push(...batch.values());
-    before = batch.last().id;
-    if (batch.size < 100) break;
-  }
-  messages.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
-
-  const body = messages.map(message => {
-    const author = escapeHtml(message.author?.tag || 'Utente sconosciuto');
-    const avatar = escapeHtml(message.author?.displayAvatarURL({ extension: 'png', size: 64 }) || '');
-    const content = escapeHtml(message.cleanContent || (message.attachments.size ? '[Allegato]' : '[Messaggio senza testo]')).replace(/\n/g, '<br>');
-    const attachments = [...message.attachments.values()].map(file =>
-      `<p><a href="${escapeHtml(file.url)}" rel="noopener noreferrer">${escapeHtml(file.name || 'Allegato')}</a></p>`
-    ).join('');
-    return `<article class="message"><img src="${avatar}" alt=""><div class="message-body"><div class="meta"><strong>${author}</strong><time>${new Date(message.createdTimestamp).toLocaleString('it-IT')}</time></div><div>${content}</div>${attachments}</div></article>`;
-  }).join('\n');
-
-  const html = `<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Transcript ticket #${ticket.id}</title><style>
-  *{box-sizing:border-box}body{margin:0;background:#313338;color:#dbdee1;font:15px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}.wrap{max-width:1000px;margin:32px auto;padding:24px}.header{background:#232428;border:1px solid #45464d;border-radius:12px;padding:22px;margin-bottom:18px}.header h1{margin:0 0 8px;color:#fff}.muted,time{color:#aeb1b8;font-size:12px}.message{display:flex;gap:14px;padding:14px 12px;border-bottom:1px solid #3f4147}.message img{width:40px;height:40px;border-radius:50%;background:#45464d}.message-body{min-width:0;overflow-wrap:anywhere}.meta{display:flex;gap:10px;align-items:baseline;margin-bottom:4px}.meta strong{color:#fff}.message a{color:#00a8fc}.footer{color:#949ba4;text-align:center;padding:24px;font-size:12px}@media(max-width:600px){.wrap{padding:12px;margin:8px auto}.header{padding:16px}}
-  </style></head><body><main class="wrap"><header class="header"><h1>Transcript ticket #${ticket.id}</h1><div class="muted">Server: ${escapeHtml(channel.guild.name)} • Canale: #${escapeHtml(channel.name)}</div><div class="muted">Aperto da ID: ${escapeHtml(ticket.opener_id)} • Chiuso: ${new Date().toLocaleString('it-IT')}</div></header>${body}<footer class="footer">Generato da auramen bot</footer></main></body></html>`;
-
-  return Buffer.from(html, 'utf8');
+/** Genera il file HTML del ticket (il builder vive in systems/transcripts.js). */
+function buildTranscript(channel, ticket, messages) {
+  return buildTicketTranscript(channel, ticket, messages);
 }
 
 // ---------------------------------------------------------------------------
@@ -424,8 +397,12 @@ async function closeTicket(interaction, channel) {
     allowedMentions: { parse: [] }
   }).catch(() => {});
 
+  const durationMinutes = ticket.created_at
+    ? Math.max(1, Math.round((Date.now() - Date.parse(`${ticket.created_at}Z`)) / 60000))
+    : null;
   await logTicket(interaction.guild, settings, {
-    ticket: { ...ticket, status: 'closed' }, action: 'close', title: 'Ticket chiuso', actorId: interaction.user.id, color: DANGER_COLOR
+    ticket: { ...ticket, status: 'closed' }, action: 'close', title: 'Ticket chiuso', actorId: interaction.user.id,
+    details: durationMinutes ? `Durata: ${durationMinutes} minuti` : null, color: DANGER_COLOR
   });
   await interaction.editReply({ content: 'Ticket chiuso. Il transcript HTML è stato inviato al canale archivio.' });
 }
@@ -528,7 +505,7 @@ async function handleButton(interaction) {
 }
 
 module.exports = {
-  publishPanel, handleButton, closeTicket,
+  publishPanel, handleButton, closeTicket, buildTranscript,
   getTicketSettings, updateTicketConfig, isStaff, logTicket, getTicketByChannel,
   DEFAULT_PANEL, DEFAULT_WELCOME, BRAND_COLOR, reply
 };

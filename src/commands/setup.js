@@ -25,6 +25,7 @@ module.exports = {
           { name: 'Canali', value: 'channels' },
           { name: 'Ruoli', value: 'roles' },
           { name: 'Moderazione', value: 'moderation' },
+          { name: 'Ticket', value: 'ticket' },
           { name: 'Vocali', value: 'voice' },
           { name: 'Server', value: 'server' }
         ))
@@ -88,6 +89,10 @@ module.exports = {
       const channel = interaction.options.getChannel('canale', true);
       config.logging ??= {};
       config.logging[category] = channel.id;
+      // Il canale log dei ticket è letto anche dal sistema ticket (/ticket config).
+      if (category === 'ticket') {
+        config.tickets = { ...(config.tickets || {}), logChannelId: channel.id };
+      }
       setGuildConfig(interaction.guildId, config);
       return interaction.reply({
         content: `Categoria **${category}** configurata su ${channel}.`,

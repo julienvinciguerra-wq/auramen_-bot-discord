@@ -66,14 +66,27 @@ function saveCase(guildId, userId, moderatorId, action, reason) {
     .run(guildId, userId, moderatorId, action, reason || null).lastInsertRowid;
 }
 
+/** Dettagli aggiuntivi della sanzione (durata timeout, giorni di messaggi eliminati col ban). */
+function sanctionFields(interaction, action) {
+  if (action === 'timeout') {
+    return [{ name: 'Durata timeout', value: `${interaction.options.getInteger('minuti')} minuti` }];
+  }
+  if (action === 'ban') {
+    return [{ name: 'Messaggi eliminati', value: `${interaction.options.getInteger('elimina_messaggi_giorni') ?? 0} giorni` }];
+  }
+  return [];
+}
+
 function logAction(interaction, { target, action, reason, caseId, extra = [] }) {
-  sendLog(interaction.guild, 'moderation', 'Sanzione / azione staff', `Comando: /moderazione ${action}`, [
-    { name: 'Utente', value: target ? `${target.tag} (\`${target.id}\`)` : 'Non applicabile' },
-    { name: 'Staff', value: `${interaction.user.tag} (\`${interaction.user.id}\`)` },
-    { name: 'Motivo', value: reason || '—' },
-    { name: 'Caso', value: caseId ? `#${caseId}` : '—' },
-    ...extra
-  ]);
+  return sendLog(interaction.guild, 'moderation', `Sanzione: ${ACTION_LABELS[action] || action}`,
+    `Comando: \`/moderazione ${action}\``, [
+      { name: 'Utente', value: target ? `${target.tag} (\`${target.id}\`)` : 'Non applicabile' },
+      { name: 'Staff', value: `${interaction.user.tag} (\`${interaction.user.id}\`)` },
+      { name: 'Motivo', value: reason || '—' },
+      { name: 'Caso', value: caseId ? `#${caseId}` : '—' },
+      ...sanctionFields(interaction, action),
+      ...extra
+    ]);
 }
 
 module.exports = {

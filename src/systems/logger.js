@@ -7,6 +7,8 @@ const COLORS = {
   channels: 0x5865F2,
   roles: 0x9B59B6,
   moderation: 0xED4245,
+  sanctions: 0xED4245,
+  tickets: 0xA855F7,
   voice: 0x3498DB,
   server: 0x95A5A6
 };

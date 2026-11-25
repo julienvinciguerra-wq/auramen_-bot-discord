@@ -1,9 +1,9 @@
 const {
-  SlashCommandBuilder, PermissionFlagsBits, ChannelType, EmbedBuilder
+  SlashCommandBuilder, PermissionFlagsBits, ChannelType, EmbedBuilder, AttachmentBuilder
 } = require('discord.js');
 const { db } = require('../database/database');
 const {
-  publishPanel, getTicketSettings, updateTicketConfig, isStaff, logTicket, getTicketByChannel,
+  publishPanel, getTicketSettings, updateTicketConfig, isStaff, logTicket, getTicketByChannel, buildTranscript,
   DEFAULT_PANEL, DEFAULT_WELCOME, BRAND_COLOR
 } = require('../systems/tickets');
 
@@ -38,7 +38,8 @@ module.exports = {
     .addSubcommand(sub => sub.setName('aggiungi').setDescription('Dà accesso al ticket a un utente.')
       .addUserOption(o => o.setName('utente').setDescription('Utente da aggiungere').setRequired(true)))
     .addSubcommand(sub => sub.setName('rimuovi').setDescription('Toglie l’accesso al ticket a un utente.')
-      .addUserOption(o => o.setName('utente').setDescription('Utente da rimuovere').setRequired(true))),
+      .addUserOption(o => o.setName('utente').setDescription('Utente da rimuovere').setRequired(true)))
+    .addSubcommand(sub => sub.setName('transcript').setDescription('Genera il transcript HTML del ticket corrente.')),
 
   async execute(interaction) {
     const sub = interaction.options.getSubcommand();
@@ -63,8 +64,15 @@ module.exports = {
       return interaction.reply({ content: 'Solo lo staff autorizzato può usare questo comando.', ephemeral: true });
     }
     const ticket = getTicketByChannel(interaction.guildId, interaction.channelId);
-    if (!ticket || ticket.status !== 'open') {
+    if (!ticket || ticket.status === 'deleted') {
+      return interaction.reply({ content: 'Usa questo comando dentro un ticket registrato.', ephemeral: true });
+    }
+    if (sub !== 'transcript' && ticket.status !== 'open') {
       return interaction.reply({ content: 'Usa questo comando dentro un ticket aperto.', ephemeral: true });
+    }
+
+    if (sub === 'transcript') {
+      return sendTranscript(interaction, ticket, settings);
     }
 
     if (sub === 'trasferisci') {
@@ -121,6 +129,20 @@ module.exports = {
     }
   }
 };
+
+/** Genera a richiesta il file HTML del ticket, anche se è già chiuso. */
+async function sendTranscript(interaction, ticket, settings) {
+  await interaction.deferReply({ ephemeral: true });
+  const buffer = await buildTranscript(interaction.channel, ticket);
+  const name = `ticket-${ticket.id}-transcript-${new Date().toISOString().slice(0, 10)}.html`;
+  await interaction.editReply({
+    content: `Transcript del ticket #${ticket.id} (stato: ${ticket.status}) • ${Math.round(buffer.length / 1024)} KB.`,
+    files: [new AttachmentBuilder(buffer, { name })]
+  });
+  return logTicket(interaction.guild, settings, {
+    ticket, action: 'transcript', title: 'Transcript generato', actorId: interaction.user.id, details: `File ${name}`
+  });
+}
 
 async function handleSetup(interaction) {
   const patch = {};

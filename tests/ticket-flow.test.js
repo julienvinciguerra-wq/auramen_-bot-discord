@@ -123,6 +123,8 @@ test('claim, chiusura con transcript, riapertura', async () => {
   await tickets.handleButton(close);
   assert.strictEqual(db.prepare('SELECT status FROM tickets WHERE channel_id = ?').get(ticketChannel.id).status, 'closed');
   assert.ok(logChannel.sent.some(m => m.files?.[0]?.name?.endsWith('transcript.html')));
+  assert.ok(logChannel.sent.some(m => m.embeds[0].data.title === 'Ticket chiuso'), 'log di chiusura inviato');
+  assert.ok(logChannel.sent.some(m => m.embeds[0].data.fields?.some(f => String(f.value).startsWith('Durata:'))), 'durata nel log di chiusura');
   assert.strictEqual(ticketChannel.permissionOverwrites.cache.get(alice.id).SendMessages, false);
   assert.strictEqual(ticketChannel.deleted, false, 'il canale non viene più cancellato alla chiusura');
 
@@ -130,6 +132,16 @@ test('claim, chiusura con transcript, riapertura', async () => {
   await tickets.handleButton(reopen);
   assert.strictEqual(db.prepare('SELECT status FROM tickets WHERE channel_id = ?').get(ticketChannel.id).status, 'open');
   assert.strictEqual(ticketChannel.permissionOverwrites.cache.get(alice.id).SendMessages, true);
+});
+
+test('/ticket transcript genera il file HTML anche su ticket chiuso', async () => {
+  const cmd = require('../src/commands/ticket');
+  const i = fakeInteraction(staff, ticketChannel, '');
+  i.options = { getSubcommand: () => 'transcript' };
+  await cmd.execute(i);
+  const reply = i.log.replies.at(-1);
+  assert.match(reply.content, /Transcript del ticket/);
+  assert.ok(reply.files?.[0]?.name?.endsWith('.html'), 'allega il file HTML');
 });
 
 test('eliminazione richiede conferma e può essere annullata', async () => {
@@ -155,7 +167,7 @@ test('record orfano (canale cancellato a mano) non blocca un nuovo ticket', asyn
 test('comando /ticket: struttura e controllo admin', async () => {
   const cmd = require('../src/commands/ticket');
   const names = cmd.data.toJSON().options.map(o => o.name);
-  for (const n of ['setup', 'config', 'pannello', 'trasferisci', 'aggiungi', 'rimuovi']) assert.ok(names.includes(n), n);
+  for (const n of ['setup', 'config', 'pannello', 'trasferisci', 'aggiungi', 'rimuovi', 'transcript']) assert.ok(names.includes(n), n);
   const i = fakeInteraction(bob, makeChannel(), '');
   i.options = { getSubcommand: () => 'setup' };
   i.memberPermissions = { has: () => false };
