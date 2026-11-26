@@ -533,7 +533,7 @@ async function handleButton(interaction) {
 }
 
 module.exports = {
-  publishPanel, handleButton, closeTicket, buildTranscript,
+  publishPanel, buildPanelMessage, handleButton, closeTicket, buildTranscript,
   getTicketSettings, updateTicketConfig, isStaff, logTicket, getTicketByChannel,
   DEFAULT_PANEL, DEFAULT_WELCOME, BRAND_COLOR, reply
 };

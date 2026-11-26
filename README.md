@@ -99,6 +99,17 @@ Crea i ruoli (Admin, Moderatore, Staff, Creator, Booster, Live, Novità video, M
 
 L'anteprima non richiede il token; `--apply` usa `DISCORD_TOKEN` da `.env` e serve che il ruolo del bot abbia **Gestisci canali** e **Gestisci ruoli**.
 
+## Configurazione automatica
+
+Un solo comando imposta quello che altrimenti richiederebbe una decina di slash command:
+
+```bash
+npm run setup-config -- --guild 1575446199232634911            # benvenuto, regole, log, ticket, pannello, conteggio, permessi
+npm run setup-config -- --guild 1575446199232634911 --conteggi # anche i counter vocali
+```
+
+Cerca i canali per nome ignorando l'emoji (`🎫｜ticket` → `ticket`), pubblica il regolamento e il pannello ticket o li aggiorna se già presenti, crea `#🔢｜conteggio` se manca e salva i permessi di `/moderazione` su ruolo Staff e canale `#staff-chat`. È ripetibile: rilanciarlo aggiorna la stessa configurazione senza duplicare nulla.
+
 ## Benvenuto
 
 `/welcome setup canale:#benvenuto` attiva il messaggio per i nuovi membri. Testo, titolo, colore, immagine e ruolo da pingare si cambiano con le opzioni; i segnaposto disponibili sono `{user}` `{name}` `{server}` `{count}`. `/welcome test` mostra l'anteprima, `/welcome mostra` la configurazione, `/welcome disattiva` spegne l'invio automatico senza perdere i testi.
