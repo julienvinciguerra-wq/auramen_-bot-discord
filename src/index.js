@@ -22,6 +22,7 @@ const { startProfileApi } = require('./systems/profile-api');
 const { startCounters } = require('./systems/counters');
 const { handleCountingMessage } = require('./systems/counting');
 const { handleGameInteraction } = require('./systems/games-ui');
+const { handleHelpButton } = require('./systems/help-panel');
 const { sendWelcome } = require('./systems/welcome');
 
 const client = new Client({
@@ -75,6 +76,12 @@ client.on(Events.InteractionCreate, async interaction => {
   }
 
   if (interaction.isButton()) {
+    // Pannello /help: pulsanti "help:…" che aggiornano la scheda mostrata.
+    if (interaction.customId?.startsWith('help:')) {
+      try { await handleHelpButton(interaction); }
+      catch (error) { console.error('Errore pannello help:', error); }
+      return;
+    }
     try { await handleButton(interaction); }
     catch (error) {
       console.error('Errore ticket button:', error);

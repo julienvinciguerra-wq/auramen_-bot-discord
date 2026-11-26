@@ -47,6 +47,7 @@ Il testo deve restare entro i 400 caratteri della Description. Se cambi dominio 
 ## Comandi disponibili
 
 - `/ping` e `/pong` — verificano che il bot sia online e mostrano la latenza.
+- `/help` — pannello di aiuto con i pulsanti Help, Info, Moderazione, Features, Giochi e Personalizzazione; ogni scheda risponde solo a chi clicca.
 - `/tris` — tris contro il bot (facile, media, difficile) o contro un membro con `avversario`.
 - `/rps-lizard-spock` — Sasso, Carta, Forbici, Lucertola, Spock contro il bot o un membro; `aiuto` mostra le regole.
 - `/battleship` — battaglie navali 1 contro 1 contro un membro del server.
