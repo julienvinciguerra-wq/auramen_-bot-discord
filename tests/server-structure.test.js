@@ -35,6 +35,22 @@ test('staff e log sono privati, il pannello ticket è in sola lettura', () => {
   assert.equal(panel.readOnly, true);
 });
 
+test('la categoria GENERAL usa emoji e barra come nel server', () => {
+  const general = CATEGORIES.find(category => category.name === '🌐 GENERAL');
+  assert.deepEqual(general.channels.map(channel => channel.name), [
+    '💬｜chat-generale',
+    '🤖｜chat-comandi',
+    '📼｜clips-of-the-week',
+    '🎥｜video-community',
+    '📦｜texture-packs',
+    '⏰｜suggerimenti'
+  ]);
+  assert.deepEqual(
+    general.channels.filter(channel => channel.type === 'announcement').map(channel => channel.name),
+    ['📦｜texture-packs', '⏰｜suggerimenti']
+  );
+});
+
 test('i canali richiesti dal bot esistono', () => {
   const names = channels.map(channel => channel.name);
   for (const required of ['ticket', 'conteggio', 'archivio-transcript', 'log-messaggi', 'log-ticket']) {

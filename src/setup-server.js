@@ -40,9 +40,11 @@ function printPlan(guildId) {
     for (const channel of category.channels) {
       const notes = [];
       if (channel.type === 'voice') notes.push('vocale');
+      if (channel.type === 'announcement') notes.push('annunci');
       if (channel.readOnly) notes.push('sola lettura');
       if (channel.topic) notes.push(channel.topic);
-      console.log(`  - ${channel.type === 'voice' ? '🔊' : '#'}${channel.name}${notes.length ? `  (${notes.join(' · ')})` : ''}`);
+      const prefix = channel.type === 'voice' ? '🔊' : channel.type === 'announcement' ? '📢' : '#';
+      console.log(`  - ${prefix}${channel.name}${notes.length ? `  (${notes.join(' · ')})` : ''}`);
     }
   }
   console.log('\nRuoli, categorie e canali con lo stesso nome vengono saltati: nessun duplicato.');
@@ -97,7 +99,11 @@ async function ensureCategory(guild, def, staffRoleIds, report) {
 }
 
 async function ensureChannel(guild, category, def, report) {
-  const type = def.type === 'voice' ? ChannelType.GuildVoice : ChannelType.GuildText;
+  const type = def.type === 'voice'
+    ? ChannelType.GuildVoice
+    : def.type === 'announcement'
+      ? ChannelType.GuildAnnouncement
+      : ChannelType.GuildText;
   const existing = guild.channels.cache.find(channel => channel.type === type && channel.name === def.name);
   if (existing) {
     report.skipped.push(`canale #${def.name}`);
@@ -105,8 +111,8 @@ async function ensureChannel(guild, category, def, report) {
   }
 
   const options = { name: def.name, type, parent: category.id, reason: REASON };
-  if (type === ChannelType.GuildText && def.topic) options.topic = def.topic;
-  if (type === ChannelType.GuildText && def.readOnly) {
+  if (type !== ChannelType.GuildVoice && def.topic) options.topic = def.topic;
+  if (type !== ChannelType.GuildVoice && def.readOnly) {
     options.permissionOverwrites = [{
       id: guild.roles.everyone.id,
       deny: [
@@ -117,7 +123,16 @@ async function ensureChannel(guild, category, def, report) {
     }];
   }
 
-  const channel = await guild.channels.create(options);
+  let channel;
+  try {
+    channel = await guild.channels.create(options);
+  } catch (error) {
+    // I canali annunci richiedono la modalità Community: in un server normale restano testuali.
+    if (type !== ChannelType.GuildAnnouncement) throw error;
+    channel = await guild.channels.create({ ...options, type: ChannelType.GuildText });
+    report.created.push(`canale #${channel.name} (testuale: annunci non disponibili)`);
+    return channel;
+  }
   report.created.push(`canale #${channel.name}`);
   return channel;
 }

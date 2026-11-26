@@ -37,13 +37,14 @@ const CATEGORIES = [
     ]
   },
   {
-    name: '💬 COMMUNITY',
+    name: '🌐 GENERAL',
     channels: [
-      { name: 'generale', topic: 'Chat libera della community' },
-      { name: 'migliori', topic: 'I messaggi migliori della settimana' },
-      { name: 'clip', topic: 'Clip e giocate migliori' },
-      { name: 'comandi', topic: 'Comandi del bot: /tris /rps-lizard-spock /battleship /counting' },
-      { name: 'conteggio', readOnly: true, topic: 'Conta da 1 in ordine: si configura con /counting setup' }
+      { name: '💬｜chat-generale', topic: 'Chat libera della community' },
+      { name: '🤖｜chat-comandi', topic: 'Comandi del bot: /tris /rps-lizard-spock /battleship /counting' },
+      { name: '📼｜clips-of-the-week', topic: 'Le clip migliori della settimana' },
+      { name: '🎥｜video-community', topic: 'Video e clip creati dai membri' },
+      { name: '📦｜texture-packs', type: 'announcement', readOnly: true, topic: 'Texture pack e resource pack della community' },
+      { name: '⏰｜suggerimenti', type: 'announcement', readOnly: true, topic: 'Suggerimenti per migliorare il server' }
     ]
   },
   {
@@ -51,7 +52,8 @@ const CATEGORIES = [
     channels: [
       { name: 'showcase', topic: 'Mostra le tue build e i tuoi progetti' },
       { name: 'scambi', topic: 'Scambi e commerci tra membri' },
-      { name: 'aiuto', topic: 'Aiuto su Minecraft e sul server' }
+      { name: 'aiuto', topic: 'Aiuto su Minecraft e sul server' },
+      { name: 'conteggio', readOnly: true, topic: 'Conta da 1 in ordine: si configura con /counting setup' }
     ]
   },
   {
