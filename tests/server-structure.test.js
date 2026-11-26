@@ -20,9 +20,9 @@ test('canali senza duplicati, con contenuti e collegamenti', () => {
   assert.ok(CATEGORIES.every(category => category.channels.length > 0));
 
   const topics = Object.fromEntries(channels.map(channel => [channel.name, channel.topic || '']));
-  assert.match(topics.youtube, /youtube\.com/);
-  assert.match(topics.live, /twitch\.tv/);
-  assert.match(topics.tiktok, /tiktok\.com/);
+  assert.match(topics['▶️｜youtube'], /youtube\.com/);
+  assert.match(topics['🔴｜live'], /twitch\.tv/);
+  assert.match(topics['🎵｜tiktok'], /tiktok\.com/);
 });
 
 test('staff e log sono privati, il pannello ticket è in sola lettura', () => {
@@ -31,8 +31,14 @@ test('staff e log sono privati, il pannello ticket è in sola lettura', () => {
   assert.ok(privateCategories.some(name => name.includes('STAFF')));
   assert.ok(privateCategories.some(name => name.includes('LOG')));
 
-  const panel = channels.find(channel => channel.name === 'ticket');
+  const panel = channels.find(channel => channel.name.endsWith('｜ticket'));
   assert.equal(panel.readOnly, true);
+});
+
+test('ogni canale ha emoji e barra davanti al nome', () => {
+  for (const channel of channels) {
+    assert.match(channel.name, /^\p{Extended_Pictographic}\uFE0F?｜/u, `emoji mancante: ${channel.name}`);
+  }
 });
 
 test('tutte le categorie usano il formato con emoji e barre', () => {
@@ -60,7 +66,7 @@ test('la categoria GENERAL usa emoji e barra come nel server', () => {
 test('i canali richiesti dal bot esistono', () => {
   const names = channels.map(channel => channel.name);
   for (const required of ['ticket', 'conteggio', 'archivio-transcript', 'log-messaggi', 'log-ticket']) {
-    assert.ok(names.includes(required), `manca il canale ${required}`);
+    assert.ok(names.some(name => name.endsWith(`｜${required}`)), `manca il canale ${required}`);
   }
   assert.ok(channels.some(channel => channel.type === 'voice'));
 });
