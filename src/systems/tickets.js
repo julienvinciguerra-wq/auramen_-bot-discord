@@ -4,6 +4,7 @@ const {
 } = require('discord.js');
 const { db, getGuildConfig, setGuildConfig } = require('../database/database');
 const { buildTicketTranscript } = require('./transcripts');
+const { saveTranscript } = require('./transcript-store');
 
 const BRAND_COLOR = 0xA855F7; // viola AURAMEN
 const SUCCESS_COLOR = 0x57F287;
@@ -60,6 +61,9 @@ function getTicketSettings(guildId) {
   return {
     panelChannelId: stored.panelChannelId || env.TICKET_PANEL_CHANNEL_ID || null,
     transcriptChannelId: stored.transcriptChannelId || env.TICKET_TRANSCRIPT_CHANNEL_ID || null,
+    transcriptMode: ['link', 'file', 'both'].includes(stored.transcriptMode)
+      ? stored.transcriptMode
+      : (['link', 'file', 'both'].includes(env.TICKET_TRANSCRIPT_MODE) ? env.TICKET_TRANSCRIPT_MODE : 'both'),
     logChannelId: stored.logChannelId || env.TICKET_LOG_CHANNEL_ID || null,
     categoryId: stored.categoryId || env.TICKET_CATEGORY_ID || null,
     staffRoleIds,
@@ -370,14 +374,34 @@ async function closeTicket(interaction, channel) {
   }
 
   const transcript = await buildTranscript(channel, ticket);
-  const attachment = new AttachmentBuilder(transcript, { name: `ticket-${ticket.id}-transcript.html` });
+  const mode = settings.transcriptMode;
+  const fileName = `ticket-${ticket.id}-transcript.html`;
+  let onlineUrl = null;
+  if (mode !== 'file') {
+    try {
+      onlineUrl = saveTranscript(interaction.guildId, ticket.id, transcript);
+    } catch (error) {
+      console.error('Salvataggio del transcript online fallito:', error.message);
+    }
+  }
+  const files = mode !== 'link' ? [new AttachmentBuilder(transcript, { name: fileName })] : [];
+  // Se il link online non è disponibile, allega il file per non perdere il transcript.
+  if (!onlineUrl && !files.length) files.push(new AttachmentBuilder(transcript, { name: fileName }));
+  const transcriptValue = [
+    onlineUrl ? `[Clicca qui per vedere il transcript](${onlineUrl})` : null,
+    files.length ? 'File HTML allegato a questo messaggio.' : null
+  ].filter(Boolean).join('\n');
+  const components = onlineUrl ? [new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setStyle(ButtonStyle.Link).setURL(onlineUrl).setLabel('Clicca qui per vedere il transcript')
+  )] : [];
   try {
     await transcriptChannel.send({
       embeds: [new EmbedBuilder().setColor(DANGER_COLOR).setTitle(`Transcript ticket #${ticket.id}`)
         .setDescription(`Ticket di <@${ticket.opener_id}> chiuso da <@${interaction.user.id}>.`)
-        .addFields({ name: 'Canale', value: channel.name }, { name: 'Download', value: 'Scarica il file HTML allegato e aprilo con il browser.' })
+        .addFields({ name: 'Canale', value: channel.name }, { name: 'Transcript', value: transcriptValue || 'Non disponibile' })
         .setTimestamp()],
-      files: [attachment],
+      files,
+      components,
       allowedMentions: { parse: [] }
     });
   } catch (error) {
@@ -404,7 +428,11 @@ async function closeTicket(interaction, channel) {
     ticket: { ...ticket, status: 'closed' }, action: 'close', title: 'Ticket chiuso', actorId: interaction.user.id,
     details: durationMinutes ? `Durata: ${durationMinutes} minuti` : null, color: DANGER_COLOR
   });
-  await interaction.editReply({ content: 'Ticket chiuso. Il transcript HTML è stato inviato al canale archivio.' });
+  await interaction.editReply({
+    content: onlineUrl
+      ? `Ticket chiuso. Transcript online: ${onlineUrl}`
+      : 'Ticket chiuso. Il transcript HTML è stato inviato al canale archivio.'
+  });
 }
 
 async function reopenTicket(interaction) {

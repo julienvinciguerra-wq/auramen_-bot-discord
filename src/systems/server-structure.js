@@ -2,8 +2,8 @@
  * Struttura del server auramen: ruoli, categorie e canali.
  *
  * I nomi sono la chiave: lo script non ricrea ciò che esiste già.
- * La struttura non duplica ticket, counter, regolamento, conteggio e giochi,
- * perché li gestisce già il bot con i suoi comandi.
+ * La struttura prepara solo i contenitori: ticket, conteggio, counter, regolamento
+ * e giochi restano gestiti dal bot con i suoi comandi.
  */
 
 const LINKS = {
@@ -26,21 +26,32 @@ const ROLES = [
 
 const CATEGORIES = [
   {
-    name: '👋 BENVENUTO',
+    name: '📋 INFORMAZIONI',
     channels: [
-      { name: 'benvenuto', readOnly: true, topic: 'Benvenuto nella community di auramen' },
-      { name: 'regole', readOnly: true, topic: 'Il regolamento lo pubblica auramen con /regole' },
+      { name: 'benvenuto', readOnly: true, topic: 'Benvenuto nella community: il messaggio lo invia /welcome' },
+      { name: 'regolamento', readOnly: true, topic: 'Il regolamento lo pubblica auramen con /regole' },
       { name: 'annunci', readOnly: true, topic: 'Annunci ufficiali del server' },
-      { name: 'ruoli', topic: 'Reagisci ai messaggi per prendere i tuoi ruoli' }
+      { name: 'palinsesto', readOnly: true, topic: 'Quando sono online e cosa sto facendo' },
+      { name: 'video', readOnly: true, topic: `Nuovi video: ${LINKS.youtube}` },
+      { name: 'giveaway', readOnly: true, topic: 'Giveaway e iniziative della community' }
     ]
   },
   {
     name: '💬 COMMUNITY',
     channels: [
       { name: 'generale', topic: 'Chat libera della community' },
-      { name: 'presentazioni', topic: 'Presentati alla community' },
-      { name: 'meme', topic: 'Meme e momenti divertenti' },
-      { name: 'clip', topic: 'Clip e giocate migliori' }
+      { name: 'migliori', topic: 'I messaggi migliori della settimana' },
+      { name: 'clip', topic: 'Clip e giocate migliori' },
+      { name: 'comandi', topic: 'Comandi del bot: /tris /rps-lizard-spock /battleship /counting' },
+      { name: 'conteggio', readOnly: true, topic: 'Conta da 1 in ordine: si configura con /counting setup' }
+    ]
+  },
+  {
+    name: '🎮 GIOCO',
+    channels: [
+      { name: 'showcase', topic: 'Mostra le tue build e i tuoi progetti' },
+      { name: 'scambi', topic: 'Scambi e commerci tra membri' },
+      { name: 'aiuto', topic: 'Aiuto su Minecraft e sul server' }
     ]
   },
   {
@@ -49,8 +60,7 @@ const CATEGORIES = [
       { name: 'ip-e-connessione', readOnly: true, topic: 'IP e istruzioni per entrare nel server Minecraft' },
       { name: 'whitelist', topic: 'Come chiedere la whitelist' },
       { name: 'modpack', topic: 'Versione, modpack e resource pack del server' },
-      { name: 'build', topic: 'Le tue build e i progetti della community' },
-      { name: 'aiuto-tecnico', topic: 'Problemi di connessione, lag e crash' }
+      { name: 'build', topic: 'Progetti e cantieri della community' }
     ]
   },
   {
@@ -62,9 +72,10 @@ const CATEGORIES = [
     ]
   },
   {
-    name: '🎫 SUPPORTO',
+    name: '🎫 ASSISTENZA',
     channels: [
-      { name: 'apri-ticket', readOnly: true, topic: 'Apri un ticket con il pulsante qui sopra' }
+      { name: 'ticket', readOnly: true, topic: 'Apri un ticket con il pulsante qui sopra' },
+      { name: 'segnalazioni', topic: 'Segnalazioni di membri e problemi' }
     ]
   },
   {
@@ -72,17 +83,32 @@ const CATEGORIES = [
     private: true,
     channels: [
       { name: 'staff-chat', topic: 'Coordinamento dello staff' },
-      { name: 'segnalazioni', topic: 'Segnalazioni dei membri' },
-      { name: 'log-mod', topic: 'Log moderazione (auramen: /setup logs categoria:moderation)' },
-      { name: 'log-ticket', topic: 'Log ticket (auramen: /setup logs categoria:ticket)' }
+      { name: 'segnalazioni-staff', topic: 'Segnalazioni da gestire' },
+      { name: 'comandi-bot', topic: 'Promemoria comandi: /setup /ticket /regole /welcome' }
+    ]
+  },
+  {
+    name: '📋 LOG',
+    private: true,
+    channels: [
+      { name: 'log-messaggi', topic: 'Messaggi eliminati e modificati (/setup logs categoria:messages)' },
+      { name: 'log-membri', topic: 'Entrate, uscite e nickname (/setup logs categoria:members)' },
+      { name: 'log-canali', topic: 'Canali creati, modificati ed eliminati (/setup logs categoria:channels)' },
+      { name: 'log-ruoli', topic: 'Ruoli creati, modificati ed eliminati (/setup logs categoria:roles)' },
+      { name: 'log-moderazione', topic: 'Sanzioni e provvedimenti (/setup logs categoria:moderation)' },
+      { name: 'log-ticket', topic: 'Ticket aperti, chiusi e transcript (/setup logs categoria:ticket)' },
+      { name: 'log-vocali', topic: 'Ingressi e uscite dai canali vocali (/setup logs categoria:voice)' },
+      { name: 'log-server', topic: 'Modifiche al server (/setup logs categoria:server)' },
+      { name: 'archivio-transcript', topic: 'Copie dei transcript dei ticket chiusi' }
     ]
   },
   {
     name: '🔊 VOCALI',
     channels: [
-      { name: 'Generale', type: 'voice' },
-      { name: 'Minecraft', type: 'voice' },
-      { name: 'Live & chill', type: 'voice' },
+      { name: 'libero', type: 'voice' },
+      { name: 'duo', type: 'voice' },
+      { name: 'squadra', type: 'voice' },
+      { name: 'raid', type: 'voice' },
       { name: 'AFK', type: 'voice' }
     ]
   }

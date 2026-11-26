@@ -1,5 +1,6 @@
 const http = require('node:http');
 const { Events, ActivityType } = require('discord.js');
+const { getTranscript } = require('./transcript-store');
 
 const USER_ID = process.env.DISCORD_USER_ID || '';
 const GUILD_ID = process.env.DISCORD_GUILD_ID || '1550243283438018660';
@@ -148,6 +149,30 @@ function startProfileApi(client) {
     }
 
     const pathname = new URL(request.url, 'http://localhost').pathname;
+
+    // Transcript dei ticket: pagina HTML pubblica ma con token casuale.
+    const transcriptMatch = pathname.match(/^\/transcripts\/([a-f0-9]{32})$/);
+    if (transcriptMatch) {
+      if (request.method !== 'GET') {
+        response.writeHead(405, { 'Content-Type': 'text/plain; charset=utf-8' });
+        response.end('Metodo non consentito');
+        return;
+      }
+      const transcript = getTranscript(transcriptMatch[1]);
+      if (!transcript) {
+        response.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+        response.end('<!doctype html><meta charset="utf-8"><title>Transcript non trovato</title><p>Questo transcript non esiste o è stato rimosso.</p>');
+        return;
+      }
+      response.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store',
+        'X-Robots-Tag': 'noindex, nofollow'
+      });
+      response.end(transcript.html);
+      return;
+    }
+
     if (request.method !== 'GET' || !['/api/discord-profile', '/api/discord-server', '/api/discord-servers'].includes(pathname)) {
       response.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
       response.end(JSON.stringify({ error: 'Not found' }));

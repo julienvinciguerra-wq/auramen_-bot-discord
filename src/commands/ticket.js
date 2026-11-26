@@ -1,7 +1,9 @@
 const {
-  SlashCommandBuilder, PermissionFlagsBits, ChannelType, EmbedBuilder, AttachmentBuilder
+  SlashCommandBuilder, PermissionFlagsBits, ChannelType, EmbedBuilder, AttachmentBuilder,
+  ActionRowBuilder, ButtonBuilder, ButtonStyle
 } = require('discord.js');
 const { db } = require('../database/database');
+const { saveTranscript } = require('../systems/transcript-store');
 const {
   publishPanel, getTicketSettings, updateTicketConfig, isStaff, logTicket, getTicketByChannel, buildTranscript,
   DEFAULT_PANEL, DEFAULT_WELCOME, BRAND_COLOR
@@ -30,6 +32,12 @@ module.exports = {
       .addStringOption(o => o.setName('footer').setDescription('Testo in fondo al pannello').setMaxLength(100))
       .addStringOption(o => o.setName('colore').setDescription('Colore esadecimale, es. #A855F7').setMaxLength(7))
       .addStringOption(o => o.setName('benvenuto').setDescription('Messaggio nel ticket. Segnaposto: {user} {staff} {ticket}').setMaxLength(1500))
+      .addStringOption(o => o.setName('formato_transcript').setDescription('Come consegnare il transcript del ticket')
+        .addChoices(
+          { name: 'Link online', value: 'link' },
+          { name: 'File HTML', value: 'file' },
+          { name: 'Entrambi', value: 'both' }
+        ))
       .addBooleanOption(o => o.setName('ripristina').setDescription('Ripristina titolo, testi e colore del pannello ai valori predefiniti')))
     .addSubcommand(sub => sub.setName('pannello').setDescription('Pubblica il pannello di apertura ticket.'))
     .addSubcommand(sub => sub.setName('trasferisci').setDescription('Trasferisce il ticket a uno staffer o a un ruolo.')
@@ -135,9 +143,20 @@ async function sendTranscript(interaction, ticket, settings) {
   await interaction.deferReply({ ephemeral: true });
   const buffer = await buildTranscript(interaction.channel, ticket);
   const name = `ticket-${ticket.id}-transcript-${new Date().toISOString().slice(0, 10)}.html`;
+  const mode = settings.transcriptMode;
+  let onlineUrl = null;
+  if (mode !== 'file') {
+    try { onlineUrl = saveTranscript(interaction.guildId, ticket.id, buffer); }
+    catch (error) { console.error('Salvataggio del transcript online fallito:', error.message); }
+  }
+  const files = mode !== 'link' ? [new AttachmentBuilder(buffer, { name })] : [];
+  if (!onlineUrl && !files.length) files.push(new AttachmentBuilder(buffer, { name }));
   await interaction.editReply({
     content: `Transcript del ticket #${ticket.id} (stato: ${ticket.status}) • ${Math.round(buffer.length / 1024)} KB.`,
-    files: [new AttachmentBuilder(buffer, { name })]
+    files,
+    components: onlineUrl ? [new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setStyle(ButtonStyle.Link).setURL(onlineUrl).setLabel('Clicca qui per vedere il transcript')
+    )] : []
   });
   return logTicket(interaction.guild, settings, {
     ticket, action: 'transcript', title: 'Transcript generato', actorId: interaction.user.id, details: `File ${name}`
@@ -182,6 +201,7 @@ async function handleConfig(interaction) {
   const footer = o.getString('footer');
   const color = o.getString('colore');
   const welcome = o.getString('benvenuto');
+  const transcriptMode = o.getString('formato_transcript');
   const reset = o.getBoolean('ripristina');
 
   const current = getTicketSettings(interaction.guildId);
@@ -201,6 +221,7 @@ async function handleConfig(interaction) {
       panel.color = parseInt(color.replace('#', ''), 16);
     }
     if (welcome) patch.welcomeMessage = welcome.replaceAll('\\n', '\n');
+    if (transcriptMode) patch.transcriptMode = transcriptMode;
     if (title || description || button || footer || color) patch.panel = panel;
   }
 
@@ -227,6 +248,7 @@ function configEmbed(settings, title) {
       { name: 'Archivio transcript', value: ch(settings.transcriptChannelId || settings.logChannelId), inline: true },
       { name: 'Ruoli staff', value: settings.staffRoleIds.length ? settings.staffRoleIds.map(id => `<@&${id}>`).join(' ') : '*non configurati*', inline: true },
       { name: 'Max ticket per utente', value: String(settings.maxOpenPerUser), inline: true },
+      { name: 'Formato transcript', value: settings.transcriptMode === 'link' ? 'Link online' : settings.transcriptMode === 'file' ? 'File HTML' : 'Link + file', inline: true },
       { name: 'Pannello', value: `**${settings.panel.title}**\n${settings.panel.description}`.slice(0, 1000) },
       { name: 'Messaggio di benvenuto', value: settings.welcomeMessage.slice(0, 1000) }
     );

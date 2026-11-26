@@ -50,6 +50,15 @@ ensureColumn('tickets', 'closed_by', 'TEXT');
 ensureColumn('tickets', 'reopened_at', 'TEXT');
 
 db.exec(`
+  CREATE TABLE IF NOT EXISTS transcripts (
+    token TEXT PRIMARY KEY,
+    guild_id TEXT NOT NULL,
+    ticket_id INTEGER,
+    html TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_transcripts_created ON transcripts (created_at);
+
   CREATE TABLE IF NOT EXISTS ticket_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ticket_id INTEGER,

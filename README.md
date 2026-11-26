@@ -98,6 +98,10 @@ Crea i ruoli (Admin, Moderatore, Staff, Creator, Booster, Live, Novità video, M
 
 L'anteprima non richiede il token; `--apply` usa `DISCORD_TOKEN` da `.env` e serve che il ruolo del bot abbia **Gestisci canali** e **Gestisci ruoli**.
 
+## Benvenuto
+
+`/welcome setup canale:#benvenuto` attiva il messaggio per i nuovi membri. Testo, titolo, colore, immagine e ruolo da pingare si cambiano con le opzioni; i segnaposto disponibili sono `{user}` `{name}` `{server}` `{count}`. `/welcome test` mostra l'anteprima, `/welcome mostra` la configurazione, `/welcome disattiva` spegne l'invio automatico senza perdere i testi.
+
 ## Logging
 
 Il modulo registra eventi disponibili tramite Discord Gateway: entrate/uscite membri, nickname e ruoli membro, messaggi modificati/eliminati quando il contenuto è disponibile, creazione/modifica/eliminazione canali e ruoli, ban/unban, ingressi/uscite/spostamenti vocali e alcune modifiche principali al server.
@@ -122,7 +126,7 @@ Discord non rende disponibili tutti gli eventi né garantisce sempre l'identific
 
 **Flusso**: il pulsante *Apri Ticket* crea un canale privato (visibile solo a chi apre, ruoli staff e bot), manda il benvenuto con ping allo staff e registra l'evento in database e nel canale log. Nel ticket: *Claim*, *Chiudi ticket*. Alla chiusura viene inviato il transcript HTML all'archivio, il canale resta (sola lettura per l'utente) con i pulsanti *Riapri ticket* e *Elimina ticket* (solo staff, con conferma). Se il transcript non può essere inviato il ticket resta aperto, per non perdere la conversazione.
 
-**Transcript**: il file HTML è un documento autonomo (stile Discord, con avatar, date in ora italiana, allegati cliccabili e badge BOT) generato da `src/systems/transcripts.js`. Viene allegato all'archivio alla chiusura e si può rigenerare in qualsiasi momento con `/ticket transcript`, anche su un ticket già chiuso; il download è visibile solo a chi esegue il comando.
+**Transcript**: si sceglie la consegna con `/ticket config formato_transcript:Link online|File HTML|Entrambi`. Con il link il transcript viene salvato nel database e pubblicato su `PUBLIC_BASE_URL/transcripts/<token>` (token casuale, pagina `noindex`, conservazione 90 giorni), così si apre con un pulsante **Clicca qui per vedere il transcript** anche dal telefono; con il file viene allegato l'HTML al canale archivio. Il documento HTML è un documento autonomo (stile Discord, con avatar, date in ora italiana, allegati cliccabili e badge BOT) generato da `src/systems/transcripts.js`. Viene allegato all'archivio alla chiusura e si può rigenerare in qualsiasi momento con `/ticket transcript`, anche su un ticket già chiuso; il download è visibile solo a chi esegue il comando.
 
 **Protezioni**: permessi verificati a ogni azione, blocco anti-doppio-click e limite di ticket per utente, record orfani (canale cancellato a mano) ripuliti, errori API gestiti con messaggio all'utente, nessun token nei log. Le operazioni sono nella tabella `ticket_logs`.
 

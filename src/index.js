@@ -22,6 +22,7 @@ const { startProfileApi } = require('./systems/profile-api');
 const { startCounters } = require('./systems/counters');
 const { handleCountingMessage } = require('./systems/counting');
 const { handleGameInteraction } = require('./systems/games-ui');
+const { sendWelcome } = require('./systems/welcome');
 
 const client = new Client({
   intents: [
@@ -54,6 +55,10 @@ for (const file of fs.readdirSync(commandsPath).filter(file => file.endsWith('.j
   const command = require(path.join(commandsPath, file));
   client.commands.set(command.data.name, command);
 }
+
+client.on(Events.GuildMemberAdd, member => {
+  sendWelcome(member).catch(error => console.error('[Benvenuto] Errore:', error));
+});
 
 client.once(Events.ClientReady, readyClient => {
   console.log(`auramen bot online come ${readyClient.user.tag}`);
