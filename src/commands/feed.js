@@ -2,7 +2,7 @@ const {
   SlashCommandBuilder, PermissionFlagsBits, ChannelType
 } = require('discord.js');
 const {
-  PLATFORMS, fetchRecent, sortNewest, resolveAccount, fetchTikTokOembed
+  PLATFORMS, fetchRecent, sortNewest, resolveAccount, hasCredentials, fetchTikTokOembed
 } = require('../systems/social-feeds');
 const {
   getFeedSettings, setFeedChannel, removeFeed, publishFeedItem, buildFeedEmbed
@@ -10,17 +10,27 @@ const {
 
 const PLATFORM_CHOICES = Object.entries(PLATFORMS).map(([value, info]) => ({ name: info.label, value }));
 
+function setupHint(platform) {
+  const info = PLATFORMS[platform];
+  if (!info.needsCredentials) return '';
+  return `\n🔑 Servono le chiavi: crea un'app su ${info.credentialsUrl} e rilancia`
+    + ` \`/feed setup piattaforma:${info.label} canale:#canale client_id:… client_secret:…\``
+    + ` (in alternativa le variabili \`${info.credentialsEnv.join('` e `')}\` nel file \`.env\`).`;
+}
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('feed')
-    .setDescription('Annuncia i nuovi video di YouTube, Twitch e TikTok.')
+    .setDescription('Annuncia i nuovi video di YouTube, Twitch, Kick e TikTok.')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addSubcommand(sub => sub
       .setName('setup')
-      .setDescription('Scegli il canale in cui annunciare una piattaforma.')
+      .setDescription('Scegli canale, account e (se serve) le chiavi API di una piattaforma.')
       .addStringOption(o => o.setName('piattaforma').setDescription('Piattaforma da annunciare').setRequired(true).addChoices(...PLATFORM_CHOICES))
       .addChannelOption(o => o.setName('canale').setDescription('Canale degli annunci').addChannelTypes(ChannelType.GuildText).setRequired(true))
-      .addStringOption(o => o.setName('account').setDescription('Nome canale o ID (facoltativo: usa quello predefinito)').setMaxLength(120)))
+      .addStringOption(o => o.setName('account').setDescription('Nome canale, slug o ID (facoltativo: usa quello predefinito)').setMaxLength(120))
+      .addStringOption(o => o.setName('client_id').setDescription('Client ID dell’app (Twitch e Kick)').setMaxLength(200))
+      .addStringOption(o => o.setName('client_secret').setDescription('Client Secret dell’app (Twitch e Kick)').setMaxLength(200)))
     .addSubcommand(sub => sub
       .setName('link')
       .setDescription('Annuncia un video TikTok dal suo link (TikTok non ha un feed automatico).')
@@ -29,7 +39,7 @@ module.exports = {
       .setName('test')
       .setDescription('Pubblica subito l’ultimo contenuto di una piattaforma.')
       .addStringOption(o => o.setName('piattaforma').setDescription('Piattaforma da provare').setRequired(true).addChoices(...PLATFORM_CHOICES)))
-    .addSubcommand(sub => sub.setName('mostra').setDescription('Mostra le piattaforme attive e i loro canali.'))
+    .addSubcommand(sub => sub.setName('mostra').setDescription('Mostra le piattaforme attive, gli account e le chiavi.'))
     .addSubcommand(sub => sub
       .setName('disattiva')
       .setDescription('Spegne gli annunci di una piattaforma.')
@@ -56,6 +66,9 @@ async function setupFeed(interaction) {
   const platform = interaction.options.getString('piattaforma', true);
   const channel = interaction.options.getChannel('canale', true);
   const account = interaction.options.getString('account')?.trim() || null;
+  const clientId = interaction.options.getString('client_id')?.trim() || null;
+  const clientSecret = interaction.options.getString('client_secret')?.trim() || null;
+  const info = PLATFORMS[platform];
 
   const me = interaction.guild.members.me;
   const perms = me ? channel.permissionsFor(me) : null;
@@ -66,22 +79,21 @@ async function setupFeed(interaction) {
     });
   }
 
-  setFeedChannel(interaction.guildId, platform, { channelId: channel.id, account });
-  const info = PLATFORMS[platform];
-  const who = account ? `\`${account}\`` : `\`${resolveAccount(platform, null)}\``;
+  setFeedChannel(interaction.guildId, platform, { channelId: channel.id, account, clientId, clientSecret });
+  const settings = getFeedSettings(interaction.guildId)[platform];
+  const who = settings.account || resolveAccount(platform, null) || 'da impostare con `account:`';
+  const ready = hasCredentials(platform, settings);
 
-  const note = platform === 'twitch' && !(process.env.TWITCH_CLIENT_ID && process.env.TWITCH_CLIENT_SECRET)
-    ? '\n⚠️ Per Twitch servono `TWITCH_CLIENT_ID` e `TWITCH_CLIENT_SECRET` nel file `.env`.'
-    : platform === 'tiktok'
-      ? '\nℹ️ TikTok non ha feed automatici: quando pubblichi un video lancialo con `/feed link url:<link del video>`.'
-      : '';
+  const lines = [
+    `Annunci **${info.label}** attivi in ${channel} — account: \`${who}\`.`,
+    platform === 'tiktok'
+      ? 'TikTok non ha feed automatici: pubblica ogni video con `/feed link url:<link>`.'
+      : 'Controllo automatico ogni pochi minuti; ora registro i contenuti già online, i prossimi arrivano qui.',
+    `Prova l’annuncio con \`/feed test piattaforma:${info.label}\`.`
+  ];
+  if (!ready) lines.push(setupHint(platform));
 
-  return interaction.reply({
-    content: `Annunci **${info.label}** attivi in ${channel} per ${who}.`
-      + `\nControllo automatico ogni pochi minuti; ora registro i video già online, i prossimi arrivano qui.`
-      + `\nUsa \`/feed test piattaforma:${platform}\` per vedere subito com’è l’annuncio.${note}`,
-    ephemeral: true
-  });
+  return interaction.reply({ content: lines.join('\n'), ephemeral: true });
 }
 
 async function announceLink(interaction) {
@@ -103,7 +115,7 @@ async function announceLink(interaction) {
   if (!channel) return interaction.editReply({ content: 'Il canale salvato non esiste più: rifai `/feed setup`.' });
 
   try {
-    const item = await fetchTikTokOembed(url);
+    const item = await fetchTikTokOembed(url, settings.account);
     await publishFeedItem(channel, 'tiktok', item);
     return interaction.editReply({ content: `Annuncio pubblicato in ${channel}.` });
   } catch (error) {
@@ -113,10 +125,14 @@ async function announceLink(interaction) {
 
 async function testFeed(interaction) {
   const platform = interaction.options.getString('piattaforma', true);
+  const info = PLATFORMS[platform];
   const settings = getFeedSettings(interaction.guildId)[platform];
 
   if (!settings?.channelId) {
-    return interaction.reply({ content: `Attiva prima la piattaforma con \`/feed setup piattaforma:${platform} canale:…\`.`, ephemeral: true });
+    return interaction.reply({ content: `Attiva prima la piattaforma con \`/feed setup piattaforma:${info.label} canale:…\`.`, ephemeral: true });
+  }
+  if (!hasCredentials(platform, settings)) {
+    return interaction.reply({ content: `Mancano le chiavi API.${setupHint(platform)}`, ephemeral: true });
   }
 
   await interaction.deferReply({ ephemeral: true });
@@ -126,7 +142,7 @@ async function testFeed(interaction) {
   }
 
   try {
-    const items = sortNewest(await fetchRecent(platform, settings.account));
+    const items = sortNewest(await fetchRecent(platform, settings.account, settings));
     if (!items.length) return interaction.editReply({ content: 'Nessun contenuto trovato su questa piattaforma.' });
     await publishFeedItem(channel, platform, items[0]);
     return interaction.editReply({ content: `Annuncio di prova inviato in ${channel}: ${items[0].url}` });
@@ -151,21 +167,25 @@ async function showFeeds(interaction) {
 
   if (!active.length) {
     return interaction.reply({
-      content: 'Nessuna piattaforma attiva. Attivale con `/feed setup piattaforma:YouTube canale:#▶️｜youtube`.',
+      content: 'Nessuna piattaforma attiva. Esempio: `/feed setup piattaforma:YouTube canale:#▶️｜youtube`.',
       ephemeral: true
     });
   }
 
   const lines = active.map(platform => {
     const entry = settings[platform];
-    const who = entry.account || resolveAccount(platform, null);
-    return `**${PLATFORMS[platform].label}** (<#${entry.channelId}>) — \`${who}\``
-      + `${entry.seen ? '' : ' — in attesa del primo controllo'}`;
+    const info = PLATFORMS[platform];
+    const who = entry.account || resolveAccount(platform, null) || '—';
+    const creds = !info.needsCredentials
+      ? ''
+      : ` — chiavi ${hasCredentials(platform, entry) ? '✅' : '❌'}`;
+    const state = entry.seen ? '' : ' — in attesa del primo controllo';
+    return `**${info.label}** (<#${entry.channelId}>) — \`${who}\`${creds}${state}`;
   });
 
   const preview = buildFeedEmbed(active[0], {
     title: 'Esempio di annuncio',
-    url: PLATFORMS[active[0]].label === 'Twitch' ? 'https://www.twitch.tv' : 'https://www.tiktok.com',
+    url: 'https://www.tiktok.com',
     thumbnail: null,
     publishedAt: new Date().toISOString(),
     live: false

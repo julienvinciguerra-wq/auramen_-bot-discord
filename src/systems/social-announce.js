@@ -1,15 +1,17 @@
 /**
  * Annunci dei nuovi contenuti: un webhook per piattaforma (nome "YouTube",
- * "Twitch", "TikTok") pubblica la scheda del video appena uscito nel canale
- * scelto. Il webhook compare come APP, quindi nessuno stato online/offline.
+ * "Twitch", "Kick", "TikTok") pubblica la scheda del video appena uscito nel
+ * canale scelto. Il webhook compare come APP, quindi nessuno stato online/offline.
  *
- * Stato salvato in `config.feeds`: canale, webhook e ultimi ID visti, così un
- * riavvio non ripubblica gli stessi video.
+ * Stato salvato in `config.feeds`: canale, account, credenziali (Twitch e Kick)
+ * e ultimi ID visti, così un riavvio non ripubblica gli stessi video.
  */
 
 const { EmbedBuilder } = require('discord.js');
 const { getGuildConfig, setGuildConfig } = require('../database/database');
-const { PLATFORMS, isPlatform, sortNewest, fetchRecent } = require('./social-feeds');
+const {
+  PLATFORMS, isPlatform, sortNewest, fetchRecent, hasCredentials, resolveCredentials
+} = require('./social-feeds');
 
 const FOOTER = 'AURAMEN • Nuovo contenuto';
 const SEEN_LIMIT = 30;
@@ -19,11 +21,7 @@ const FIRST_RUN_DELAY_MS = 20000;
 // Piattaforme senza feed pubblico: si annunciano dal link con `/feed link`.
 const MANUAL_PLATFORMS = new Set(['tiktok']);
 
-let twitchWarningShown = false;
-
-function twitchReady() {
-  return Boolean(process.env.TWITCH_CLIENT_ID && process.env.TWITCH_CLIENT_SECRET);
-}
+const warned = new Set();
 
 function normalize(entry, platform) {
   const info = PLATFORMS[platform];
@@ -31,12 +29,14 @@ function normalize(entry, platform) {
     channelId: entry?.channelId ? String(entry.channelId) : null,
     webhookId: entry?.webhookId ? String(entry.webhookId) : null,
     account: entry?.account || null,
+    clientId: entry?.clientId || null,
+    clientSecret: entry?.clientSecret || null,
     hint: info.channelHint,
     seen: Array.isArray(entry?.seen) ? entry.seen.map(String).slice(0, SEEN_LIMIT) : null
   };
 }
 
-/** Piattaforme configurate per il server: { youtube: {...}, tiktok: {...} }. */
+/** Piattaforme configurate per il server: { youtube: {...}, kick: {...} }. */
 function getFeedSettings(guildId) {
   const stored = getGuildConfig(guildId).feeds || {};
   const settings = {};
@@ -54,16 +54,18 @@ function saveFeedSettings(guildId, settings) {
   return getFeedSettings(guildId);
 }
 
-/** Attiva gli annunci di una piattaforma in un canale. */
-function setFeedChannel(guildId, platform, { channelId, account } = {}) {
+/** Attiva gli annunci di una piattaforma in un canale (credenziali facoltative). */
+function setFeedChannel(guildId, platform, { channelId, account, clientId, clientSecret } = {}) {
   if (!isPlatform(platform)) throw new TypeError(`Piattaforma non valida: ${platform}`);
   if (!channelId) throw new TypeError('Canale mancante.');
   const settings = getFeedSettings(guildId);
+  const current = normalize(settings[platform], platform);
   settings[platform] = {
-    ...normalize(settings[platform], platform),
+    ...current,
     channelId: String(channelId),
-    account: account || settings[platform]?.account || null,
-    seen: settings[platform]?.seen || null
+    account: account || current.account || null,
+    clientId: clientId || current.clientId || null,
+    clientSecret: clientSecret || current.clientSecret || null
   };
   return saveFeedSettings(guildId, settings);
 }
@@ -142,21 +144,23 @@ async function publishFeedItem(channel, platform, item) {
  */
 async function checkPlatform(guild, platform, { force = false } = {}) {
   if (MANUAL_PLATFORMS.has(platform)) return { platform, posted: 0, skipped: 'annuncio manuale' };
-  if (platform === 'twitch' && !twitchReady()) {
-    if (!twitchWarningShown) {
-      twitchWarningShown = true;
-      console.warn('[Feed twitch] Mancano TWITCH_CLIENT_ID e TWITCH_CLIENT_SECRET nel file .env: annunci Twitch fermi finché non le aggiungi.');
-    }
-    return { platform, posted: 0, skipped: 'credenziali Twitch mancanti' };
-  }
 
   const settings = getFeedSettings(guild.id)[platform];
   if (!settings?.channelId) return { platform, posted: 0, skipped: 'non configurata' };
 
+  if (!hasCredentials(platform, settings)) {
+    if (!warned.has(platform)) {
+      warned.add(platform);
+      const info = PLATFORMS[platform];
+      console.warn(`[Feed ${platform}] Servono Client ID e Secret: /feed setup piattaforma:${info.label} canale:… client_id:… client_secret:…`);
+    }
+    return { platform, posted: 0, skipped: 'credenziali mancanti' };
+  }
+
   const channel = await guild.channels.fetch(settings.channelId).catch(() => null);
   if (!channel) return { platform, posted: 0, skipped: 'canale non trovato' };
 
-  const items = sortNewest(await fetchRecent(platform, settings.account));
+  const items = sortNewest(await fetchRecent(platform, settings.account, settings));
   if (!items.length) return { platform, posted: 0, skipped: 'nessun contenuto' };
 
   const baseline = !Array.isArray(settings.seen);

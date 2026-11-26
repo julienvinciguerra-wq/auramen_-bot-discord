@@ -155,11 +155,12 @@ La prima esecuzione crea nel canale il webhook **Regolamento** (avatar del bot) 
 
 ## Annunci video
 
-Ogni volta che esci con un video, il bot lo annuncia con un messaggio firmato dalla piattaforma (`YouTube`, `Twitch`, `TikTok`), come APP e senza pallino online/offline: sotto compare la scheda con miniatura e link.
+Ogni volta che esci con un video, il bot lo annuncia con un messaggio firmato dalla piattaforma (`YouTube`, `Twitch`, `Kick`, `TikTok`), come APP e senza pallino online/offline: sotto compare la scheda con miniatura e link.
 
 ```
 /feed setup piattaforma:YouTube canale:#▶️｜youtube
 /feed setup piattaforma:Twitch canale:#🔴｜live
+/feed setup piattaforma:Kick canale:#🔴｜live account:tuo-slug
 /feed setup piattaforma:TikTok canale:#🎵｜tiktok
 /feed link url:<link TikTok>      # annuncia subito il video appena uscito
 /feed test piattaforma:YouTube    # annuncio di prova immediato
@@ -168,8 +169,11 @@ Ogni volta che esci con un video, il bot lo annuncia con un messaggio firmato da
 ```
 
 - **YouTube** — legge il feed RSS pubblico del canale (`YOUTUBE_CHANNEL_ID`), nessuna chiave API.
-- **Twitch** — Helix API con `TWITCH_CLIENT_ID` e `TWITCH_CLIENT_SECRET` (app gratis su dev.twitch.tv): annuncia la live quando parte e gli ultimi VOD.
+- **Twitch** — Helix API: crea un'app su dev.twitch.tv/console/apps e passa `client_id` e `client_secret` a `/feed setup` (oppure mettili in `TWITCH_CLIENT_ID` e `TWITCH_CLIENT_SECRET`). Annuncia la live e gli ultimi VOD.
+- **Kick** — API ufficiale col token applicazione: app da kick.com/settings/developer, poi `client_id` e `client_secret` su `/feed setup piattaforma:Kick canale:#canale account:<slug>`. Annuncia quando la live parte.
 - **TikTok** — non esiste un feed pubblico senza chiavi: quando esce un video lancialo con `/feed link url:https://www.tiktok.com/@auramen07/video/…` e il webhook **TikTok** pubblica la scheda (titolo e copertina arrivano dall'oEmbed pubblico di TikTok).
+
+Le chiavi API si possono dare direttamente da `/feed setup` (restano nel database locale del bot) oppure dalle variabili d'ambiente `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`, `KICK_CLIENT_ID` e `KICK_CLIENT_SECRET`; `/feed mostra` indica quali piattaforme hanno le chiavi.
 
 Il controllo gira ogni `FEED_INTERVAL_MINUTES` minuti (10 di default). Al primo avvio registra i video già online senza pubblicarli: da lì in poi annuncia solo i nuovi. Gli ID già annunciati restano in `config.feeds`, quindi un riavvio non crea doppioni.
 

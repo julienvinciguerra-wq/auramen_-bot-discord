@@ -2,7 +2,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
-  parseYouTubeFeed, parseTikTokProfile, sortNewest, resolveAccount
+  parseYouTubeFeed, parseKickChannel, parseTikTokProfile, sortNewest,
+  resolveAccount, resolveCredentials, hasCredentials
 } = require('../src/systems/social-feeds');
 const { buildFeedEmbed } = require('../src/systems/social-announce');
 
@@ -94,4 +95,39 @@ test('buildFeedEmbed firma l’annuncio con il nome della piattaforma', () => {
 test('resolveAccount usa il predefinito della piattaforma', () => {
   assert.equal(resolveAccount('youtube', 'UC123'), 'UC123');
   assert.ok(resolveAccount('tiktok', null).length > 0);
+});
+
+test('parseKickChannel legge la live dall’API ufficiale', () => {
+  const payload = {
+    data: [{
+      slug: 'auramen07',
+      stream_title: 'Ranked con voi',
+      stream: {
+        is_live: true,
+        start_time: '2026-11-25T20:00:00Z',
+        thumbnail: 'https://cdn.kick/thumb.jpg',
+        url: 'https://kick.com/auramen07'
+      }
+    }]
+  };
+  const items = parseKickChannel(payload, 'auramen07');
+  assert.equal(items.length, 1);
+  assert.equal(items[0].id, 'kick:live:auramen07:2026-11-25T20:00:00Z');
+  assert.equal(items[0].title, 'Ranked con voi');
+  assert.equal(items[0].url, 'https://kick.com/auramen07');
+  assert.equal(items[0].thumbnail, 'https://cdn.kick/thumb.jpg');
+  assert.equal(items[0].live, true);
+});
+
+test('parseKickChannel non annuncia nulla se il canale è offline', () => {
+  assert.deepEqual(parseKickChannel({ data: [{ slug: 'auramen07', stream: { is_live: false } }] }, 'auramen07'), []);
+  assert.deepEqual(parseKickChannel({ data: [] }, 'auramen07'), []);
+});
+
+test('le credenziali salvate vincono su quelle d’ambiente', () => {
+  const creds = resolveCredentials('kick', { clientId: 'id-1', clientSecret: 'secret-1' });
+  assert.deepEqual(creds, { clientId: 'id-1', clientSecret: 'secret-1' });
+  assert.equal(hasCredentials('kick', { clientId: 'id-1', clientSecret: 'secret-1' }), true);
+  assert.equal(hasCredentials('kick', { clientId: 'id-1' }), false);
+  assert.equal(hasCredentials('youtube', {}), true);
 });
