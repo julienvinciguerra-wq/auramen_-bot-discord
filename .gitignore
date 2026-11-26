@@ -8,3 +8,14 @@ node_modules/
 logs/
 # Copie di riferimento di altri progetti (solo consultazione, non fanno parte del bot)
 reference/
+# Tooling locale per creare canali e ruoli: resta sul computer, non va su GitHub
+src/setup-server.js
+src/setup-config.js
+src/systems/server-structure.js
+src/systems/server-access.js
+tests/server-structure.test.js
+site/
+auramen_-bot-discord/
+data/
+*.sqlite-wal
+*.sqlite-shm

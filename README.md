@@ -86,39 +86,15 @@ Tutti i giochi usano pulsanti o menu di Discord: nessuna configurazione, nessun 
 
 Le partite sono tenute in memoria: i pulsanti valgono 15 minuti e un riavvio del bot chiude quelle in corso. Il conteggio è l'unico dato persistente.
 
-## Struttura del server
-
-Per partire da un server vuoto c'è uno script che crea ruoli, categorie e canali:
-
-```bash
-npm run setup-server -- --guild 1575446199232634911            # anteprima, senza toccare nulla
-npm run setup-server -- --guild 1575446199232634911 --apply    # crea davvero
-```
-
-Crea i ruoli (Admin, Moderatore, Staff, Creator, Booster, Live, Novità video, Membro, Accesso Logs, Accesso Ticket, Accesso Vocali), le categorie con i loro canali, i permessi di sola lettura e la categoria staff privata. È ripetibile: quello che esiste già viene saltato, quindi non crea doppioni. Non crea ticket, counter, canale conteggio, regolamento né canali per i giochi: li gestisce il bot con i propri comandi.
-
-L'anteprima non richiede il token; `--apply` usa `DISCORD_TOKEN` da `.env` e serve che il ruolo del bot abbia **Gestisci canali** e **Gestisci ruoli**.
-
-## Configurazione automatica
-
-Un solo comando imposta quello che altrimenti richiederebbe una decina di slash command:
-
-```bash
-npm run setup-config -- --guild 1575446199232634911            # benvenuto, regole, log, ticket, pannello, conteggio, permessi, accessi
-npm run setup-config -- --guild 1575446199232634911 --conteggi # anche i counter vocali
-```
-
-Cerca i canali per nome ignorando l'emoji (`🎫｜ticket` → `ticket`), pubblica il regolamento e il pannello ticket o li aggiorna se già presenti, crea `#🔢｜conteggio` se manca e salva i permessi di `/moderazione` su ruolo Staff e canale `#staff-chat`. È ripetibile: rilanciarlo aggiorna la stessa configurazione senza duplicare nulla.
-
 ## Permessi di accesso
 
 Tre ruoli aprono le aree riservate: **Accesso Logs** (canali LOG), **Accesso Ticket** (categoria TICKET e ticket aperti) e **Accesso Vocali** (entrare nelle vocali private). Admin, Moderatore e Staff hanno sempre accesso.
 
 - i canali LOG sono nascosti a `@everyone`: li vedono solo **Accesso Logs**, Admin e Moderatore;
 - la categoria TICKET è nascosta a `@everyone`: chi apre un ticket vede il proprio canale, chi ha **Accesso Ticket** vede tutti i ticket;
-- le vocali private `🔐｜privata-1` e `🔐｜privata-2` le vedono tutti (anche chi è dentro), ma per entrare serve **Accesso Vocali**, Staff, Admin o Moderatore.
+- le vocali private, se ne aggiungerai, possono restare visibili a tutti ma bloccate in ingresso per chi non ha **Accesso Vocali**, Staff, Admin o Moderatore.
 
-`npm run setup-config` applica questi permessi a ogni esecuzione; `npm run setup-server -- --apply` li crea già da zero.
+I ruoli **Accesso Logs**, **Accesso Ticket** e **Accesso Vocali** li crei tu da *Impostazioni server → Ruoli* e li assegni a chi deve entrare; i permessi dei canali si gestiscono da *Impostazioni canale → Permessi*.
 
 ## Benvenuto
 
@@ -166,6 +142,16 @@ Discord consente **2 rinomine ogni 10 minuti per canale**: il bot non supera mai
 ## Regolamento
 
 `/regole config testo:Regola uno\nRegola due` salva le regole (vengono numerate automaticamente), poi `/regole pubblica canale:<canale>` le pubblica. Se il regolamento è già in quel canale viene aggiornato invece di essere duplicato.
+
+**Come APP, senza pallino online/offline**: un messaggio del bot mostra sempre lo stato; un **webhook** compare come `APP` con il nome scelto e nessuno stato. Il comando da terminale pubblica il regolamento in quel modo:
+
+```bash
+npm run regole -- --guild 1575446199232634911               # canale #📋｜regolamento
+npm run regole -- --guild 1575446199232634911 --canale regole
+npm run regole -- --guild 1575446199232634911 --reset          # torna alle regole predefinite
+```
+
+La prima esecuzione crea nel canale il webhook **Regolamento** (avatar del bot) e invia l'embed; le successive aggiornano lo stesso messaggio. Serve **Gestisci webhook** nel canale. In alternativa puoi creare tu un webhook da *Impostazioni canale → Integrazioni → Webhook* e usarlo per scrivere le regole a mano.
 
 ## Test
 

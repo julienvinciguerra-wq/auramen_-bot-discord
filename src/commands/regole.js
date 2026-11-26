@@ -12,8 +12,9 @@ const DEFAULT_RULES = {
     'Niente spam, flood, tag di massa o abuso di emoji e maiuscole.',
     'Niente contenuti illegali, minacce, gore o materiale per adulti.',
     'Niente pubblicità, autopromozione o link non autorizzati dallo staff.',
-    'Usa i canali corretti e segui le indicazioni dello staff.',
-    'Le decisioni dello staff vanno discusse in privato, mai in pubblico.'
+    'Chatta in 💬｜chat-generale, usa i comandi in 🤖｜chat-comandi e pubblica clip e video nei canali CONTENUTI.',
+    'Problemi con un utente o con lo staff? Apri un ticket in 🎫｜ticket; per le segnalazioni usa 🚨｜segnalazioni.',
+    'Le decisioni dello staff si discutono in privato, mai in pubblico.'
   ].join('\n'),
   footer: 'AURAMEN • Regolamento',
   color: BRAND_COLOR
@@ -60,10 +61,22 @@ function buildRulesEmbed(rules) {
     .setTimestamp();
 }
 
+function resetRules(guildId) {
+  return updateRulesSettings(guildId, {
+    title: DEFAULT_RULES.title,
+    description: DEFAULT_RULES.description,
+    text: DEFAULT_RULES.text,
+    footer: DEFAULT_RULES.footer,
+    color: DEFAULT_RULES.color
+  });
+}
+
 module.exports = {
+  DEFAULT_RULES,
   buildRulesEmbed,
   getRulesSettings,
   updateRulesSettings,
+  resetRules,
   data: new SlashCommandBuilder()
     .setName('regole')
     .setDescription('Pubblica e personalizza il regolamento del server.')
