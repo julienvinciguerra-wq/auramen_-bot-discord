@@ -85,6 +85,19 @@ Tutti i giochi usano pulsanti o menu di Discord: nessuna configurazione, nessun 
 
 Le partite sono tenute in memoria: i pulsanti valgono 15 minuti e un riavvio del bot chiude quelle in corso. Il conteggio è l'unico dato persistente.
 
+## Struttura del server
+
+Per partire da un server vuoto c'è uno script che crea ruoli, categorie e canali:
+
+```bash
+npm run setup-server -- --guild 1575446199232634911            # anteprima, senza toccare nulla
+npm run setup-server -- --guild 1575446199232634911 --apply    # crea davvero
+```
+
+Crea i ruoli (Admin, Moderatore, Staff, Creator, Booster, Live, Novità video, Membro), le categorie con i loro canali, i permessi di sola lettura e la categoria staff privata. È ripetibile: quello che esiste già viene saltato, quindi non crea doppioni. Non crea ticket, counter, canale conteggio, regolamento né canali per i giochi: li gestisce il bot con i propri comandi.
+
+L'anteprima non richiede il token; `--apply` usa `DISCORD_TOKEN` da `.env` e serve che il ruolo del bot abbia **Gestisci canali** e **Gestisci ruoli**.
+
 ## Logging
 
 Il modulo registra eventi disponibili tramite Discord Gateway: entrate/uscite membri, nickname e ruoli membro, messaggi modificati/eliminati quando il contenuto è disponibile, creazione/modifica/eliminazione canali e ruoli, ban/unban, ingressi/uscite/spostamenti vocali e alcune modifiche principali al server.
