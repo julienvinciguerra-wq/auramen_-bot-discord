@@ -26,7 +26,7 @@ const ROLES = [
 
 const CATEGORIES = [
   {
-    name: '📋 INFORMAZIONI',
+    name: '─── 【📋】 INFORMAZIONI ───',
     channels: [
       { name: 'benvenuto', readOnly: true, topic: 'Benvenuto nella community: il messaggio lo invia /welcome' },
       { name: 'regolamento', readOnly: true, topic: 'Il regolamento lo pubblica auramen con /regole' },
@@ -37,7 +37,7 @@ const CATEGORIES = [
     ]
   },
   {
-    name: '🌐 GENERAL',
+    name: '─── 【🌐】 GENERAL ───',
     channels: [
       { name: '💬｜chat-generale', topic: 'Chat libera della community' },
       { name: '🤖｜chat-comandi', topic: 'Comandi del bot: /tris /rps-lizard-spock /battleship /counting' },
@@ -48,7 +48,7 @@ const CATEGORIES = [
     ]
   },
   {
-    name: '🎮 GIOCO',
+    name: '─── 【🎮】 GIOCO ───',
     channels: [
       { name: 'showcase', topic: 'Mostra le tue build e i tuoi progetti' },
       { name: 'scambi', topic: 'Scambi e commerci tra membri' },
@@ -57,7 +57,7 @@ const CATEGORIES = [
     ]
   },
   {
-    name: '⛏️ MINECRAFT',
+    name: '─── 【⛏️】 MINECRAFT ───',
     channels: [
       { name: 'ip-e-connessione', readOnly: true, topic: 'IP e istruzioni per entrare nel server Minecraft' },
       { name: 'whitelist', topic: 'Come chiedere la whitelist' },
@@ -66,7 +66,15 @@ const CATEGORIES = [
     ]
   },
   {
-    name: '🎥 CONTENUTI',
+    name: '─── 【🎬】 ATTIVITÀ ───',
+    channels: [
+      { name: '⏱️｜spedizioni', topic: 'Organizza spedizioni e uscite di gruppo' },
+      { name: '🚩｜raduni', topic: 'Raduni e ritrovi della community' },
+      { name: '🔑｜server-privati', topic: 'Server privati e mondi condivisi' }
+    ]
+  },
+  {
+    name: '─── 【🎥】 CONTENUTI ───',
     channels: [
       { name: 'youtube', readOnly: true, topic: `Nuovi video: ${LINKS.youtube}` },
       { name: 'live', readOnly: true, topic: `Live su Twitch: ${LINKS.twitch}` },
@@ -74,14 +82,14 @@ const CATEGORIES = [
     ]
   },
   {
-    name: '🎫 ASSISTENZA',
+    name: '─── 【🎫】 ASSISTENZA ───',
     channels: [
       { name: 'ticket', readOnly: true, topic: 'Apri un ticket con il pulsante qui sopra' },
       { name: 'segnalazioni', topic: 'Segnalazioni di membri e problemi' }
     ]
   },
   {
-    name: '🛠️ STAFF',
+    name: '─── 【🛠️】 STAFF ───',
     private: true,
     channels: [
       { name: 'staff-chat', topic: 'Coordinamento dello staff' },
@@ -90,7 +98,7 @@ const CATEGORIES = [
     ]
   },
   {
-    name: '📋 LOG',
+    name: '─── 【🗂️】 LOG ───',
     private: true,
     channels: [
       { name: 'log-messaggi', topic: 'Messaggi eliminati e modificati (/setup logs categoria:messages)' },
@@ -105,7 +113,7 @@ const CATEGORIES = [
     ]
   },
   {
-    name: '🔊 VOCALI',
+    name: '─── 【🔊】 VOCALI ───',
     channels: [
       { name: 'libero', type: 'voice' },
       { name: 'duo', type: 'voice' },

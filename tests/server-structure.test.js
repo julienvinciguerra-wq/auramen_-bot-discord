@@ -26,17 +26,23 @@ test('canali senza duplicati, con contenuti e collegamenti', () => {
 });
 
 test('staff e log sono privati, il pannello ticket è in sola lettura', () => {
-  assert.deepEqual(
-    CATEGORIES.filter(category => category.private).map(category => category.name),
-    ['🛠️ STAFF', '📋 LOG']
-  );
+  const privateCategories = CATEGORIES.filter(category => category.private).map(category => category.name);
+  assert.equal(privateCategories.length, 2);
+  assert.ok(privateCategories.some(name => name.includes('STAFF')));
+  assert.ok(privateCategories.some(name => name.includes('LOG')));
 
   const panel = channels.find(channel => channel.name === 'ticket');
   assert.equal(panel.readOnly, true);
 });
 
+test('tutte le categorie usano il formato con emoji e barre', () => {
+  for (const category of CATEGORIES) {
+    assert.match(category.name, /^─── 【.+】 .+ ───$/u, `formato categoria non valido: ${category.name}`);
+  }
+});
+
 test('la categoria GENERAL usa emoji e barra come nel server', () => {
-  const general = CATEGORIES.find(category => category.name === '🌐 GENERAL');
+  const general = CATEGORIES.find(category => category.name.includes('GENERAL'));
   assert.deepEqual(general.channels.map(channel => channel.name), [
     '💬｜chat-generale',
     '🤖｜chat-comandi',
