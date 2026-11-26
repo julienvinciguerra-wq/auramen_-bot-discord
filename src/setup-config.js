@@ -17,6 +17,7 @@ const { buildRulesEmbed, getRulesSettings, updateRulesSettings } = require('./co
 const { updateTicketConfig, getTicketSettings, buildPanelMessage } = require('./systems/tickets');
 const { startCounting } = require('./systems/counting');
 const { setCounter, updateCounters } = require('./systems/counters');
+const { applyAccessPermissions, ACCESS } = require('./systems/server-access');
 
 const LOG_CHANNELS = {
   members: 'log-membri',
@@ -132,6 +133,17 @@ async function main() {
       problemi.push('canale regolamento non trovato');
     }
 
+    // --- Ruoli di accesso, log/ticket protetti e vocali private ---
+    try {
+      const access = await applyAccessPermissions(guild);
+      for (const riga of access.created) esiti.push(riga);
+      for (const riga of access.updated) esiti.push(riga);
+      for (const riga of access.errors) problemi.push(riga);
+    } catch (error) {
+      problemi.push(`permessi di accesso: ${error.message}`);
+    }
+    const accessTicketRole = guild.roles.cache.find(role => role.name === ACCESS.ticket) || null;
+
     // --- Ticket ---
     const ticketCategory = findCategory(channels, 'TICKET');
     if (ticketCategory && panelChannel && staffRole) {
@@ -140,7 +152,7 @@ async function main() {
         panelChannelId: panelChannel.id,
         logChannelId: logTicket?.id || null,
         transcriptChannelId: transcriptChannel?.id || null,
-        staffRoleIds: [staffRole.id],
+        staffRoleIds: [staffRole, accessTicketRole].filter(Boolean).map(role => role.id),
         transcriptMode: 'both',
         maxOpenPerUser: 2
       });

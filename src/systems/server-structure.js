@@ -21,8 +21,19 @@ const ROLES = [
   { name: 'Booster', color: 0xec4899 },
   { name: 'Live', color: 0xef4444, mentionable: true },
   { name: 'Novità video', color: 0xf472b6, mentionable: true },
-  { name: 'Membro' }
+  { name: 'Membro' },
+  // Ruoli "chiave": non cambiano la gerarchia, sbloccano solo l'accesso.
+  { name: 'Accesso Logs', color: 0x94a3b8 },
+  { name: 'Accesso Ticket', color: 0x22d3ee },
+  { name: 'Accesso Vocali', color: 0xa78bfa }
 ];
+
+/** Ruoli che aprono log, ticket e vocali private a chi li riceve. */
+const ACCESS = {
+  logs: 'Accesso Logs',
+  ticket: 'Accesso Ticket',
+  voice: 'Accesso Vocali'
+};
 
 const CATEGORIES = [
   {
@@ -91,6 +102,7 @@ const CATEGORIES = [
   {
     name: '─── 【🗂️】 LOG ───',
     private: true,
+    accessRole: ACCESS.logs,
     channels: [
       { name: '✉️｜log-messaggi', topic: 'Messaggi eliminati e modificati (/setup logs categoria:messages)' },
       { name: '👥｜log-membri', topic: 'Entrate, uscite e nickname (/setup logs categoria:members)' },
@@ -110,9 +122,11 @@ const CATEGORIES = [
       { name: '👥｜duo', type: 'voice' },
       { name: '🛡️｜squadra', type: 'voice' },
       { name: '⚔️｜raid', type: 'voice' },
-      { name: '😴｜AFK', type: 'voice' }
+      { name: '😴｜AFK', type: 'voice' },
+      { name: '🔐｜privata-1', type: 'voice', restricted: true },
+      { name: '🔐｜privata-2', type: 'voice', restricted: true }
     ]
   }
 ];
 
-module.exports = { LINKS, ROLES, CATEGORIES };
+module.exports = { LINKS, ROLES, CATEGORIES, ACCESS };

@@ -6,7 +6,8 @@ const {
   ChannelType,
   PermissionFlagsBits
 } = require('discord.js');
-const { ROLES, CATEGORIES } = require('./systems/server-structure');
+const { ROLES, CATEGORIES, ACCESS } = require('./systems/server-structure');
+const { applyAccessPermissions } = require('./systems/server-access');
 
 const STAFF_ROLES = ['Admin', 'Moderatore', 'Staff'];
 const REASON = 'Struttura auramen';
@@ -35,11 +36,13 @@ function parseArgs(argv) {
 function printPlan(guildId) {
   console.log(`Struttura per il server ${guildId}\n`);
   console.log(`Ruoli (${ROLES.length}): ${ROLES.map(role => role.name).join(' · ')}`);
+  console.log(`Ruoli di accesso: ${Object.values(ACCESS).join(' · ')}`);
   for (const category of CATEGORIES) {
-    console.log(`\n${category.name}${category.private ? ' [privata]' : ''}`);
+    console.log(`\n${category.name}${category.private ? ' [privata]' : ''}${category.accessRole ? ` [solo ${category.accessRole}]` : ''}`);
     for (const channel of category.channels) {
       const notes = [];
       if (channel.type === 'voice') notes.push('vocale');
+      if (channel.restricted) notes.push('visibile a tutti, si entra con Accesso Vocali');
       if (channel.type === 'announcement') notes.push('annunci');
       if (channel.readOnly) notes.push('sola lettura');
       if (channel.topic) notes.push(channel.topic);
@@ -162,6 +165,16 @@ async function applyStructure(guild) {
     }
   }
 
+  // Ruoli di accesso, log/ticket nascosti e vocali private.
+  try {
+    const access = await applyAccessPermissions(guild);
+    report.created.push(...access.created);
+    report.updated = access.updated;
+    report.errors.push(...access.errors);
+  } catch (error) {
+    report.errors.push(`permessi di accesso: ${error.message}`);
+  }
+
   return report;
 }
 
@@ -192,6 +205,7 @@ async function main() {
     console.log(`Server: ${guild.name} (${guild.id})`);
     const report = await applyStructure(guild);
     for (const line of report.created) console.log(`+ ${line}`);
+    for (const line of report.updated || []) console.log(`* ${line}`);
     for (const line of report.skipped) console.log(`= ${line} (già presente)`);
     for (const line of report.errors) console.error(`! ${line}`);
     console.log(`\nCreati ${report.created.length} elementi, saltati ${report.skipped.length}, errori ${report.errors.length}.`);

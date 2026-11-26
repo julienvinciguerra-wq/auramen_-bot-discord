@@ -95,7 +95,7 @@ npm run setup-server -- --guild 1575446199232634911            # anteprima, senz
 npm run setup-server -- --guild 1575446199232634911 --apply    # crea davvero
 ```
 
-Crea i ruoli (Admin, Moderatore, Staff, Creator, Booster, Live, Novità video, Membro), le categorie con i loro canali, i permessi di sola lettura e la categoria staff privata. È ripetibile: quello che esiste già viene saltato, quindi non crea doppioni. Non crea ticket, counter, canale conteggio, regolamento né canali per i giochi: li gestisce il bot con i propri comandi.
+Crea i ruoli (Admin, Moderatore, Staff, Creator, Booster, Live, Novità video, Membro, Accesso Logs, Accesso Ticket, Accesso Vocali), le categorie con i loro canali, i permessi di sola lettura e la categoria staff privata. È ripetibile: quello che esiste già viene saltato, quindi non crea doppioni. Non crea ticket, counter, canale conteggio, regolamento né canali per i giochi: li gestisce il bot con i propri comandi.
 
 L'anteprima non richiede il token; `--apply` usa `DISCORD_TOKEN` da `.env` e serve che il ruolo del bot abbia **Gestisci canali** e **Gestisci ruoli**.
 
@@ -104,11 +104,21 @@ L'anteprima non richiede il token; `--apply` usa `DISCORD_TOKEN` da `.env` e ser
 Un solo comando imposta quello che altrimenti richiederebbe una decina di slash command:
 
 ```bash
-npm run setup-config -- --guild 1575446199232634911            # benvenuto, regole, log, ticket, pannello, conteggio, permessi
+npm run setup-config -- --guild 1575446199232634911            # benvenuto, regole, log, ticket, pannello, conteggio, permessi, accessi
 npm run setup-config -- --guild 1575446199232634911 --conteggi # anche i counter vocali
 ```
 
 Cerca i canali per nome ignorando l'emoji (`🎫｜ticket` → `ticket`), pubblica il regolamento e il pannello ticket o li aggiorna se già presenti, crea `#🔢｜conteggio` se manca e salva i permessi di `/moderazione` su ruolo Staff e canale `#staff-chat`. È ripetibile: rilanciarlo aggiorna la stessa configurazione senza duplicare nulla.
+
+## Permessi di accesso
+
+Tre ruoli aprono le aree riservate: **Accesso Logs** (canali LOG), **Accesso Ticket** (categoria TICKET e ticket aperti) e **Accesso Vocali** (entrare nelle vocali private). Admin, Moderatore e Staff hanno sempre accesso.
+
+- i canali LOG sono nascosti a `@everyone`: li vedono solo **Accesso Logs**, Admin e Moderatore;
+- la categoria TICKET è nascosta a `@everyone`: chi apre un ticket vede il proprio canale, chi ha **Accesso Ticket** vede tutti i ticket;
+- le vocali private `🔐｜privata-1` e `🔐｜privata-2` le vedono tutti (anche chi è dentro), ma per entrare serve **Accesso Vocali**, Staff, Admin o Moderatore.
+
+`npm run setup-config` applica questi permessi a ogni esecuzione; `npm run setup-server -- --apply` li crea già da zero.
 
 ## Benvenuto
 

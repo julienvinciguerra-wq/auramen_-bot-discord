@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { ROLES, CATEGORIES } = require('../src/systems/server-structure');
+const { ROLES, CATEGORIES, ACCESS } = require('../src/systems/server-structure');
 
 const channels = CATEGORIES.flatMap(category => category.channels);
 
@@ -61,6 +61,23 @@ test('la categoria GENERAL usa emoji e barra come nel server', () => {
     general.channels.filter(channel => channel.type === 'announcement').map(channel => channel.name),
     ['📦｜texture-packs', '⏰｜suggerimenti']
   );
+});
+
+test('ruoli di accesso per log, ticket e vocali private', () => {
+  const names = ROLES.map(role => role.name);
+  for (const name of Object.values(ACCESS)) {
+    assert.ok(names.includes(name), `manca il ruolo ${name}`);
+    assert.equal(ROLES.find(role => role.name === name).mentionable, undefined);
+  }
+  const log = CATEGORIES.find(category => category.name.includes('LOG'));
+  assert.equal(log.accessRole, ACCESS.logs);
+});
+
+test('le vocali private sono segnate come riservate', () => {
+  const vocali = CATEGORIES.find(category => category.name.includes('VOCALI'));
+  const privateVoices = vocali.channels.filter(channel => channel.restricted);
+  assert.ok(privateVoices.length >= 2);
+  assert.ok(privateVoices.every(channel => channel.type === 'voice'));
 });
 
 test('i canali richiesti dal bot esistono', () => {
