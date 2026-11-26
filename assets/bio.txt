@@ -1,8 +1,8 @@
 auramen — bot Discord open source: ticket, moderazione, log, counter e giochi.
 
 🔗 Link utili
+Tutti i link: https://auramen-bio.vercel.app
 Sito: https://auramen-bot-site.vercel.app
-Aggiungi al server: https://discord.com/oauth2/authorize?client_id=1550469997986642236&permissions=1099780189334&scope=bot%20applications.commands
-Supporto: apri un ticket con /ticket
+Invito: https://discord.com/oauth2/authorize?client_id=1550469997986642236&permissions=1099780189334&scope=bot%20applications.commands
 
 Giochi: /tris · /rps-lizard-spock · /battleship · /counting
