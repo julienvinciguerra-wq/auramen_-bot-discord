@@ -1,6 +1,6 @@
 # auramen bot
 
-Bot Discord open source per logging, moderazione e ticket.
+Bot Discord open source per logging, moderazione, ticket e giochi.
 
 ## Requisiti
 
@@ -36,7 +36,12 @@ npm start
 
 ## Comandi disponibili
 
-- `/ping` — verifica che il bot sia online.
+- `/ping` e `/pong` — verificano che il bot sia online e mostrano la latenza.
+- `/tris` — tris contro il bot (facile, media, difficile) o contro un membro con `avversario`.
+- `/rps-lizard-spock` — Sasso, Carta, Forbici, Lucertola, Spock contro il bot o un membro; `aiuto` mostra le regole.
+- `/battleship` — battaglie navali 1 contro 1 contro un membro del server.
+- `/counting` — gestisce il gioco del conteggio (`setup`, `stato`, `reset`, `disattiva`).
+- `/toccalerba` — toc... esatto.
 - `/setup logs` — assegna un canale a una categoria di log.
 - `/setup tickets` — configura canale pannello, archivio transcript e ruolo staff.
 - `/setup permessi` — imposta il ruolo e il canale consentiti per ogni comando di moderazione.
@@ -58,6 +63,17 @@ npm start
 - `/ticket trasferisci` — trasferisce l'accesso del ticket a un membro staff o ruolo.
 - `/ticket aggiungi` / `/ticket rimuovi` — dà o toglie l'accesso al ticket a un utente.
 - `/ticket transcript` — genera a richiesta il transcript HTML del ticket corrente (funziona anche su un ticket già chiuso).
+
+## Giochi
+
+Tutti i giochi usano pulsanti o menu di Discord: nessuna configurazione, nessun permesso aggiuntivo oltre a quelli già usati per i messaggi.
+
+- **`/tris`** — contro il bot con tre difficoltà (facile casuale, media quasi perfetta, difficile imbattibile) oppure contro un membro: la sfida va accettata e i due giocatori usano ✕ e ◯ a turno.
+- **`/rps-lizard-spock`** — le dieci combinazioni classiche; in sfida ogni scelta resta nascosta finché non hanno scelto entrambi.
+- **`/battleship avversario:@membro`** — griglia 10×10 (righe A–J, colonne 1–10) con portaerei, corazzata, incrociatore, sottomarino e pattugliatore. Le flotte sono schierate a caso e restano segrete: ognuno riceve la propria posizione in un messaggio privato (pulsante **La mia flotta** per rivederla) e nel canale compaiono solo i tiri, con acqua, colpi e navi affondate. Il menu si sposta a pagine di due righe con ◀ ▶.
+- **`/counting setup canale:#conteggio`** — si conta in ordine da 1; un numero sbagliato o due messaggi di fila dello stesso utente azzerano la serie, mentre il record resta salvato in SQLite. Il canale continua a funzionare per le normali conversazioni: solo i messaggi composti da un numero vengono controllati.
+
+Le partite sono tenute in memoria: i pulsanti valgono 15 minuti e un riavvio del bot chiude quelle in corso. Il conteggio è l'unico dato persistente.
 
 ## Logging
 

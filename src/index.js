@@ -20,6 +20,8 @@ const { handleButton } = require('./systems/tickets');
 const { handleTicketMessage } = require('./systems/ticket-assistant');
 const { startProfileApi } = require('./systems/profile-api');
 const { startCounters } = require('./systems/counters');
+const { handleCountingMessage } = require('./systems/counting');
+const { handleGameInteraction } = require('./systems/games-ui');
 
 const client = new Client({
   intents: [
@@ -42,6 +44,8 @@ startCounters(client);
 client.on(Events.MessageCreate, async message => {
   try { await handleTicketMessage(message); }
   catch (error) { console.error('[Ticket assistant] Errore:', error); }
+  try { await handleCountingMessage(message); }
+  catch (error) { console.error('[Conteggio] Errore:', error); }
 });
 
 client.commands = new Collection();
@@ -56,6 +60,15 @@ client.once(Events.ClientReady, readyClient => {
 });
 
 client.on(Events.InteractionCreate, async interaction => {
+  // Giochi: pulsanti e menu hanno customId "game:…" e gestiscono da soli la risposta.
+  if (interaction.isButton() || interaction.isStringSelectMenu()) {
+    if (interaction.customId?.startsWith('game:')) {
+      await handleGameInteraction(interaction);
+      return;
+    }
+    if (!interaction.isButton()) return;
+  }
+
   if (interaction.isButton()) {
     try { await handleButton(interaction); }
     catch (error) {
