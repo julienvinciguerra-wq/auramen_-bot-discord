@@ -153,6 +153,26 @@ npm run regole -- --guild 1575446199232634911 --reset          # torna alle rego
 
 La prima esecuzione crea nel canale il webhook **Regolamento** (avatar del bot) e invia l'embed; le successive aggiornano lo stesso messaggio. Serve **Gestisci webhook** nel canale. In alternativa puoi creare tu un webhook da *Impostazioni canale → Integrazioni → Webhook* e usarlo per scrivere le regole a mano.
 
+## Annunci video
+
+Ogni volta che esci con un video, il bot lo annuncia con un messaggio firmato dalla piattaforma (`YouTube`, `Twitch`, `TikTok`), come APP e senza pallino online/offline: sotto compare la scheda con miniatura e link.
+
+```
+/feed setup piattaforma:YouTube canale:#▶️｜youtube
+/feed setup piattaforma:Twitch canale:#🔴｜live
+/feed setup piattaforma:TikTok canale:#🎵｜tiktok
+/feed link url:<link TikTok>      # annuncia subito il video appena uscito
+/feed test piattaforma:YouTube    # annuncio di prova immediato
+/feed mostra                      # piattaforme attive
+/feed disattiva piattaforma:Twitch
+```
+
+- **YouTube** — legge il feed RSS pubblico del canale (`YOUTUBE_CHANNEL_ID`), nessuna chiave API.
+- **Twitch** — Helix API con `TWITCH_CLIENT_ID` e `TWITCH_CLIENT_SECRET` (app gratis su dev.twitch.tv): annuncia la live quando parte e gli ultimi VOD.
+- **TikTok** — non esiste un feed pubblico senza chiavi: quando esce un video lancialo con `/feed link url:https://www.tiktok.com/@auramen07/video/…` e il webhook **TikTok** pubblica la scheda (titolo e copertina arrivano dall'oEmbed pubblico di TikTok).
+
+Il controllo gira ogni `FEED_INTERVAL_MINUTES` minuti (10 di default). Al primo avvio registra i video già online senza pubblicarli: da lì in poi annuncia solo i nuovi. Gli ID già annunciati restano in `config.feeds`, quindi un riavvio non crea doppioni.
+
 ## Test
 
 ```bash

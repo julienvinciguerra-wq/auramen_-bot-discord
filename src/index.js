@@ -24,6 +24,7 @@ const { handleCountingMessage } = require('./systems/counting');
 const { handleGameInteraction } = require('./systems/games-ui');
 const { handleHelpButton } = require('./systems/help-panel');
 const { sendWelcome } = require('./systems/welcome');
+const { startSocialFeeds } = require('./systems/social-announce');
 
 const client = new Client({
   intents: [
@@ -41,6 +42,7 @@ const client = new Client({
 registerLogs(client);
 startProfileApi(client);
 startCounters(client);
+startSocialFeeds(client);
 
 // Assistente impostazioni: risponde solo nei ticket aperti registrati nel database.
 client.on(Events.MessageCreate, async message => {
