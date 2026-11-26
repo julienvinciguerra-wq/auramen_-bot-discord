@@ -34,6 +34,16 @@ npm run deploy
 npm start
 ```
 
+## Profilo del bot
+
+La bio mostrata nel profilo Discord è la **Description** dell'applicazione: si imposta nel Developer Portal, non dal codice.
+
+1. Apri [Discord Developer Portal](https://discord.com/developers/applications) → la tua applicazione.
+2. **General Information** → *Description*: incolla il testo di [`assets/bio.txt`](assets/bio.txt) e salva.
+3. Sempre in **General Information** → *Tags*: aggiungi fino a 5 tag (es. `moderazione`, `ticket`, `log`, `giochi`, `utility`).
+
+Il testo deve restare entro i 400 caratteri della Description. Se cambi dominio del sito o invito del bot, aggiorna `assets/bio.txt` e ripeti il passaggio 2.
+
 ## Comandi disponibili
 
 - `/ping` e `/pong` — verificano che il bot sia online e mostrano la latenza.
