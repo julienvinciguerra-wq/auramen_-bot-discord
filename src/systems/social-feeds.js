@@ -25,7 +25,7 @@ const PLATFORMS = {
     label: 'Twitch',
     color: 0x9146ff,
     env: 'TWITCH_LOGIN',
-    defaultAccount: 'juliettamos',
+    defaultAccount: 'auramen07',
     channelHint: 'live',
     needsCredentials: true,
     credentialsEnv: ['TWITCH_CLIENT_ID', 'TWITCH_CLIENT_SECRET'],
